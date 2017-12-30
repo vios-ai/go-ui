@@ -5,7 +5,7 @@ function GoBan(size = 19, scale = 24) {
   this.sz1 = scale;
   this.stoneRadius = scale / 2 - .5;
   this.gobanSz = (size + 1) * scale
-  this.delta = scale;
+  this.delta = scale * 1.5;
 
   // Draw 1 hoshi (star point) at x,y
   this.hoshi = function(x, y) {
@@ -45,11 +45,14 @@ function GoBan(size = 19, scale = 24) {
   }
 
   this.drawCoordinates = function() {
+    this.ctx.font="bold "+this.sz1*.38+"px Arial"
+    this.ctx.fillStyle = "DimGray"
+    //this.ctx.font="30px Arial";
     for (var i=0; i<this.n; i++) {
-      this.ctx.fillText(""+(this.n-i), 0, this.posToCoord(i+.1))
-      this.ctx.fillText(""+(this.n-i), this.posToCoord(this.n-0.5), this.posToCoord(i+.1))
-      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.posToCoord(this.n - 0.1))
-      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.sz1/2)
+      this.ctx.fillText(""+(this.n-i), this.posToCoord(-1.52), this.posToCoord(i+.1))
+      this.ctx.fillText(""+(this.n-i), this.posToCoord(this.n+.1), this.posToCoord(i+.15))
+      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.posToCoord(this.n + 0.35))
+      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.sz1/3)
     }
   }
 
@@ -82,12 +85,12 @@ function GoBan(size = 19, scale = 24) {
   // Draw the main board on the given canvas
   this.Draw = function(c) {
     this.canvas = c;
-    c.height = this.gobanSz + 30;
-    c.width = this.gobanSz + 30 ;
+    c.height = this.gobanSz + this.sz1;
+    c.width = this.gobanSz + this.sz1 ;
     var ctx = c.getContext("2d");
     this.ctx = ctx;
     ctx.fillStyle = "moccasin";
-    ctx.fillRect(0, 0, this.gobanSz, this.gobanSz);
+    ctx.fillRect(this.sz1/2, this.sz1/2, this.gobanSz, this.gobanSz);
     ctx.fillStyle = "black";
     var zero = this.posToCoord(0)
     var last = this.posToCoord(this.n - 1)
