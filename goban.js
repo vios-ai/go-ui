@@ -61,8 +61,8 @@ function GoBan(size = 19) {
     this.ctx.fillStyle = "DimGray"
     for (var i = 0; i < this.n; i++) {
       var num = "" + (this.n - i)
-      this.ctx.fillText(num, this.posToCoord(-1.52), this.posToCoord(i + .1))
-      this.ctx.fillText(num, this.posToCoord(this.n + .1), this.posToCoord(i + .15))
+      this.ctx.fillText(num, this.posToCoord(-1.51), this.posToCoord(i + .1))
+      this.ctx.fillText(num, this.posToCoord(this.n + .08), this.posToCoord(i + .15))
       var letter = this.posToLetter(i)
       this.ctx.fillText(letter, this.posToCoord(i - 0.1), this.posToCoord(this.n + 0.35))
       this.ctx.fillText(letter, this.posToCoord(i - 0.1), this.sz1 / 3)
