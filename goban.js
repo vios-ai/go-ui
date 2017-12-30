@@ -10,6 +10,7 @@ function GoBan(size = 19) {
   }
   this.withCoordinates = true
   this.withSounds = true
+  this.withLastMoveHighlight = true
 
   // Draw 1 hoshi (star point) at x,y
   this.hoshi = function(x, y) {
@@ -61,34 +62,81 @@ function GoBan(size = 19) {
     }
   }
 
+  this.AddHighlight = function() {
+    var l = this.game.length
+    if ((!this.withLastMoveHighlight) || (l == 0)) {
+      return
+    }
+    var lastMove = this.game[l - 1]
+    if (this.OutOfBounds(lastMove.x, lastMove.y)) {
+      return
+    }
+    var highlight = this.HighlightColor(lastMove.color)
+    var ctx = this.ctx
+    ctx.beginPath();
+    ctx.strokeStyle = highlight;
+    ctx.lineWidth = 2;
+    var rs = this.stoneRadius * .55
+    var x = this.posToCoord(lastMove.x)
+    var y = this.posToCoord(lastMove.y)
+    ctx.moveTo(x - rs, y - rs)
+    ctx.lineTo(x + rs, y + rs)
+    ctx.moveTo(x + rs, y - rs)
+    ctx.lineTo(x - rs, y + rs)
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.fillStyle = lastMove.color;
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.fill()
+  }
+
+  this.RemoveHighlight = function() {
+    var l = this.game.length;
+    if ((!this.withLastMoveHighlight) || (l == 0)) {
+      return
+    }
+    var lastMove = this.game[l - 1]
+    this.drawStone(lastMove.x, lastMove.y, lastMove.color)
+  }
+
   this.RecordMove = function(x, y, color) {
+    this.RemoveHighlight();
     this.game.push({
       x,
       y,
       color
     });
-    this.board[x][y] = color
-    this.drawStone(x, y, color);
+    this.board[x][y] = color;
+    this.drawStone(x, y, color, this.withLastMoveHighlight);
+    this.AddHighlight();
   }
 
-  this.drawStone = function(x, y, color) {
+  this.HighlightColor = function(color) {
+    if (color == "white") {
+      return "black"
+    } else {
+      return "white"
+    }
+  }
+
+  this.drawStone = function(x, y, color, skipHighlight = false) {
     if (this.OutOfBounds(x, y)) {
       console.log("Skipping OOB " + x + " " + y)
       return
     }
-    var highlight = "white"
-    if (color == "white") {
-      highlight = "black"
-    }
+    var highlight = this.HighlightColor(color)
     var ctx = this.ctx
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.fillStyle = color;
     ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
     ctx.fill();
-    ctx.beginPath();
-    ctx.strokeStyle = highlight;
-    ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius * 2 / 3, 0.15, Math.PI / 2 - .15);
-    ctx.stroke();
+    if (!skipHighlight) {
+      ctx.beginPath();
+      ctx.strokeStyle = highlight;
+      ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius * 2 / 3, 0.15, Math.PI / 2 - .15);
+      ctx.stroke();
+    }
     ctx.beginPath();
     ctx.strokeStyle = "grey"
     ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
@@ -173,9 +221,12 @@ function GoBan(size = 19) {
     if (this.withCoordinates) {
       this.drawCoordinates()
     }
-    for (var i = 0; i < this.game.length; i++) {
-      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color)
+    var len = this.game.length - 1
+    for (var i = 0; i <= len; i++) {
+      var skipHighlight = (i == len && this.withLastMoveHighlight) // for the last move
+      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color, skipHighlight)
     }
+    this.AddHighlight();
   }
 
   this.Undo = function() {
