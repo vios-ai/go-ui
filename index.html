@@ -29,7 +29,7 @@
           <select onchange="goban.n=parseInt(value);resizeHandler();">
             <option value="19">19x19</option>
             <option value="13">13x13</option>
-            <option value="9">9x9</option>
+            <option value="9" selected>9x9</option>
           </select>
         </td>
         <td align="right">
@@ -38,7 +38,7 @@
       </tr>
   </table>
   <script>
-    var goban = new GoBan(19)
+    var goban = new GoBan(9)
 
     function resizeHandler() {
       var size = goban.n

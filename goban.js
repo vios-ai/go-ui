@@ -1,12 +1,15 @@
 // Creates a goban of the requested size - each of the size lines are seperated
 // by scale pixels.
 // (c)2017 All Rights Reserved by Laurent Demailly
+
+var maxSize = 19
+
 function GoBan(size = 19) {
   this.n = size;
   this.game = [];
-  this.board = new Array(size)
-  for (var i = 0; i < size; i++) {
-    this.board[i] = new Array(size)
+  this.board = new Array(maxSize)
+  for (var i = 0; i < maxSize; i++) {
+    this.board[i] = new Array(maxSize)
   }
   this.withCoordinates = true
   this.withSounds = true
