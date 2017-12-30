@@ -2,14 +2,17 @@
 // by scale pixels.
 // (c)2017 All Rights Reserved by Laurent Demailly
 
-var maxSize = 19
+var GoBanMaxSize = 19
 
 function GoBan(size = 19) {
   this.n = size;
   this.game = [];
-  this.board = new Array(maxSize)
-  for (var i = 0; i < maxSize; i++) {
-    this.board[i] = new Array(maxSize)
+  if (size > GoBanMaxSize) {
+    GoBanMaxSize = size
+  }
+  this.board = new Array(GoBanMaxSize)
+  for (var i = 0; i < GoBanMaxSize; i++) {
+    this.board[i] = new Array(GoBanMaxSize)
   }
   this.withCoordinates = true
   this.withSounds = true
