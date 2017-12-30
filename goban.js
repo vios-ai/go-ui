@@ -111,11 +111,14 @@ function GoBan(size = 19) {
     this.stoneRadius = scale / 2 - .5;
     this.gobanSz = (this.n + 1) * scale
     this.delta = scale * 1.5;
-    this.canvas = c;
-    var self = this
-    c.addEventListener("mousedown", function(event) {
-      self.clickPosition(event);
-    }, false);
+    if (!this.canvas) {
+      // First time, setup listener
+      var self = this
+      c.addEventListener("mousedown", function(event) {
+        self.clickPosition(event);
+      }, true);
+      this.canvas = c;
+    }
     this.Redraw()
   }
 
@@ -136,6 +139,7 @@ function GoBan(size = 19) {
     var i = this.coordToPos(x)
     var j = this.coordToPos(y)
     if (this.isValid(i, j)) {
+      console.log("Valid move " + i + " , " + j)
       if (this.withSounds) {
         audio.play();
       }
