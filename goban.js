@@ -1,5 +1,6 @@
 // Creates a goban of the requested size - each of the size lines are seperated
 // by scale pixels.
+// (c)2017 All Rights Reserved by Laurent Demailly
 function GoBan(size = 19, scale = 24) {
   this.n = size;
   this.sz1 = scale;
@@ -117,6 +118,7 @@ function GoBan(size = 19, scale = 24) {
     var i = this.coordToPos(x)
     var j = this.coordToPos(y)
     if (this.isValid(i, j)) {
+      audio.play();
       this.drawStone(i, j, "orange")
     } else {
       console.log("Invalid click outside the goban " + i + " , " + j)
@@ -153,3 +155,6 @@ function GoBan(size = 19, scale = 24) {
   }
 
 }
+
+// Stone sound (c)2017 All Rights Reserved by Laurent Demailly
+var audio = new Audio('gostone.m4a');
