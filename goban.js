@@ -116,7 +116,7 @@ function GoBan(size = 19, scale = 24) {
   }
 
   this.isValid = function(i, j) {
-    if (i < 0 || j < 0 || i >= this.n || j > this.n) {
+    if (i < 0 || j < 0 || i >= this.n || j >= this.n) {
       return false
     }
     return !this.board[i][j]
