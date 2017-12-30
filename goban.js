@@ -38,7 +38,10 @@ function GoBan(size = 19, scale = 20) {
   }
 
   this.drawStone = function(x, y, color) {
-    var highlight = "grey"
+    var highlight = "white"
+    if (color == "white") {
+      highlight = "black"
+    }
     var ctx = this.ctx
     ctx.beginPath();
     ctx.fillStyle = color;
@@ -49,6 +52,7 @@ function GoBan(size = 19, scale = 20) {
     ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius * 2 / 3, 0.15, Math.PI / 2 - .15);
     ctx.stroke();
     ctx.beginPath();
+    ctx.strokeStyle = "grey"
     ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
     ctx.stroke();
   }
