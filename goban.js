@@ -92,10 +92,39 @@ function GoBan(size = 19, scale = 24) {
     // need 0.5 to look sharp/black instead of grey
     return 0.5 + this.delta + x * this.sz1;
   }
+  // inverse of above
+  this.coordToPos = function(x) {
+    return Math.round((x - 0.5 - this.delta) / this.sz1);
+  }
 
   // Draw the main board on the given canvas
   this.Draw = function(c) {
     this.canvas = c;
+    var self = this
+    c.addEventListener("mousedown", function(event) {
+      self.clickPosition(event);
+    }, false);
+    this.Redraw()
+  }
+
+  this.isValid = function(i, j) {
+    return (i >= 0 && j >= 0 && i < this.n && j < this.n)
+  }
+
+  this.clickPosition = function(event) {
+    var x = event.offsetX
+    var y = event.offsetY
+    var i = this.coordToPos(x)
+    var j = this.coordToPos(y)
+    if (this.isValid(i, j)) {
+      this.drawStone(i, j, "orange")
+    } else {
+      console.log("Invalid click outside the goban " + i + " , " + j)
+    }
+  }
+
+  this.Redraw = function() {
+    c = this.canvas
     c.height = this.gobanSz + this.sz1;
     c.width = this.gobanSz + this.sz1;
     var ctx = c.getContext("2d");
@@ -122,7 +151,5 @@ function GoBan(size = 19, scale = 24) {
       this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color)
     }
   }
-  this.Redraw = function() {
-    this.Draw(this.canvas)
-  }
+
 }
