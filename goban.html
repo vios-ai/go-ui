@@ -18,10 +18,19 @@
   <script>
     var goban1 = new GoBan(); // defaults 19x19
     goban1.Draw(document.getElementById("goban1"));
-    var goban1 = new GoBan(13, 26);
-    goban1.Draw(document.getElementById("goban2"));
-    var goban2 = new GoBan(9, 32)
-    goban2.Draw(document.getElementById("goban3"));
+    var goban2 = new GoBan(13, 26);
+    goban2.Draw(document.getElementById("goban2"));
+    var goban3 = new GoBan(9, 64)
+    goban3.Draw(document.getElementById("goban3"));
+
+    function test1(g) {
+      g.drawStone(3, 2, "black");
+      g.drawStone(2, 5, "white");
+      g.drawStone(2, 4, "black");
+    }
+    test1(goban1)
+    test1(goban2)
+    test1(goban3)
   </script>
 </body>
 

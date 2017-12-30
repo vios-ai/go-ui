@@ -3,6 +3,7 @@
 function GoBan(size = 19, scale = 20) {
   this.n = size;
   this.sz1 = scale;
+  this.stoneRadius = scale / 2 - .5;
   this.gobanSz = (size + 1) * scale
   this.delta = scale;
 
@@ -29,11 +30,27 @@ function GoBan(size = 19, scale = 20) {
     this.hoshi(h, g)
     this.hoshi(g, g)
     if (this.n > 13) {
-      this.hoshi(h,mid)
-      this.hoshi(g,mid)
-      this.hoshi(mid,h)
-      this.hoshi(mid,g)
+      this.hoshi(h, mid)
+      this.hoshi(g, mid)
+      this.hoshi(mid, h)
+      this.hoshi(mid, g)
     }
+  }
+
+  this.drawStone = function(x, y, color) {
+    var highlight = "grey"
+    var ctx = this.ctx
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = highlight;
+    ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius * 2 / 3, 0.15, Math.PI / 2 - .15);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
+    ctx.stroke();
   }
 
   // internal utility for coord -> pixels translation
