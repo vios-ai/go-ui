@@ -20,9 +20,10 @@
       </td>
       <tr>
         <td>
-          Coordinates: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />,
-          Sounds: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />,
-          Last move highlight: <input type="checkbox" onchange="goban.withLastMoveHighlight=this.checked;goban.Redraw();" checked />.
+          Coords: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />,
+          Sound: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />,
+          Move#: <input type="checkbox" onchange="goban.withMoveNumbers=this.checked;goban.Redraw();" checked />,
+          Last move: <input type="checkbox" onchange="goban.withLastMoveHighlight=this.checked;goban.Redraw();" checked />.
         </td>
         <td align="center">
           &nbsp;Size:
@@ -56,6 +57,7 @@
       var scale = 2 * Math.floor(min * .95 / (size + 2) / 2)
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
+      //goban.drawStone(1,1, "orange", 399)
     }
     resizeHandler()
   </script>

@@ -7,6 +7,8 @@
 </head>
 
 <body>
+  <a href="index.html">main page</a>
+  <hr>
   <canvas id="goban1"></canvas>
   <hr>
   <canvas id="goban2"></canvas>
@@ -40,10 +42,12 @@
       g.RecordMove(2, 4, "black");
       g.RecordMove(g.n - 1, g.n - 1, "red")
       g.RecordMove(0, 0, "green")
+      g.drawStone(1,1, "purple", 399)
     }
-    test1(goban1)
     test1(goban2)
-    // leaving 3 alone for a more real look/game
+    for (var i=0; i<361; i++) {
+      goban1.RecordMove(i%19,Math.floor(i/19), (i % 2 == 0) ? "black" : "white")
+    }
   </script>
 </body>
 

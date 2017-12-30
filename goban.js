@@ -17,6 +17,7 @@ function GoBan(size = 19) {
   this.withCoordinates = true
   this.withSounds = true
   this.withLastMoveHighlight = true
+  this.withMoveNumbers = true
 
   // Draw 1 hoshi (star point) at x,y
   this.hoshi = function(x, y) {
@@ -82,18 +83,19 @@ function GoBan(size = 19) {
     ctx.beginPath();
     ctx.strokeStyle = highlight;
     ctx.lineWidth = 2;
-    var rs = this.stoneRadius * .55
+    var rs = this.stoneRadius * .6
+    var len = rs/3
     var x = this.posToCoord(lastMove.x)
     var y = this.posToCoord(lastMove.y)
     ctx.moveTo(x - rs, y - rs)
-    ctx.lineTo(x + rs, y + rs)
+    ctx.lineTo(x - rs + len, y - rs + len)
+    ctx.moveTo(x + rs, y + rs)
+    ctx.lineTo(x + rs - len, y + rs - len)
     ctx.moveTo(x + rs, y - rs)
-    ctx.lineTo(x - rs, y + rs)
+    ctx.lineTo(x + rs - len, y - rs + len)
+    ctx.moveTo(x - rs, y + rs)
+    ctx.lineTo(x - rs + len, y + rs - len)
     ctx.stroke();
-    ctx.beginPath();
-    ctx.fillStyle = lastMove.color;
-    ctx.arc(x, y, 4, 0, 2 * Math.PI);
-    ctx.fill()
   }
 
   this.RemoveHighlight = function() {
@@ -102,7 +104,7 @@ function GoBan(size = 19) {
       return
     }
     var lastMove = this.game[l - 1]
-    this.drawStone(lastMove.x, lastMove.y, lastMove.color)
+    this.drawStone(lastMove.x, lastMove.y, lastMove.color, l)
   }
 
   this.RecordMove = function(x, y, color) {
@@ -113,7 +115,7 @@ function GoBan(size = 19) {
       color
     });
     this.board[x][y] = color;
-    this.drawStone(x, y, color, this.withLastMoveHighlight);
+    this.drawStone(x, y, color, this.game.length, this.withLastMoveHighlight);
     this.AddHighlight();
   }
 
@@ -125,27 +127,37 @@ function GoBan(size = 19) {
     }
   }
 
-  this.drawStone = function(x, y, color, skipHighlight = false) {
-    if (this.OutOfBounds(x, y)) {
-      console.log("Skipping OOB " + x + " " + y)
+  this.drawStone = function(i, j, color, num, skipHighlight = false) {
+    if (this.OutOfBounds(i, j)) {
+      console.log("Skipping OOB " + i + " " + j)
       return
     }
+    var x = this.posToCoord(i);
+    var y = this.posToCoord(j);
     var highlight = this.HighlightColor(color)
     var ctx = this.ctx
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.fillStyle = color;
-    ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
+    ctx.arc(x, y, this.stoneRadius, 0, 2 * Math.PI);
     ctx.fill();
     if (!skipHighlight) {
       ctx.beginPath();
       ctx.strokeStyle = highlight;
-      ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius * 2 / 3, 0.15, Math.PI / 2 - .15);
+      ctx.arc(x, y, this.stoneRadius * .7, 0.15, Math.PI / 2 - .15);
       ctx.stroke();
+    }
+    if (num > 0 && this.withMoveNumbers) {
+      ctx.fillStyle = highlight;
+      ctx.textAlign="center";
+      // checked it fits with highlight and 399
+      var fontSz = Math.round(this.sz1 * .35 * 10)/10
+      ctx.font = "" + fontSz + "px Arial";
+      ctx.fillText(""+num, x, y+fontSz/3);
     }
     ctx.beginPath();
     ctx.strokeStyle = "grey"
-    ctx.arc(this.posToCoord(x), this.posToCoord(y), this.stoneRadius, 0, 2 * Math.PI);
+    ctx.arc(x, y, this.stoneRadius, 0, 2 * Math.PI);
     ctx.stroke();
   }
 
@@ -194,10 +206,10 @@ function GoBan(size = 19) {
     var j = this.coordToPos(y)
     if (this.isValid(i, j)) {
       console.log("Valid move " + i + " , " + j)
+      this.RecordMove(i, j, (this.game.length % 2 == 0) ? "black" : "white")
       if (this.withSounds) {
         audio.play();
       }
-      this.RecordMove(i, j, (this.game.length % 2 == 0) ? "black" : "white")
     } else {
       console.log("Invalid move " + i + " , " + j)
     }
@@ -230,7 +242,7 @@ function GoBan(size = 19) {
     var len = this.game.length - 1
     for (var i = 0; i <= len; i++) {
       var skipHighlight = (i == len && this.withLastMoveHighlight) // for the last move
-      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color, skipHighlight)
+      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color, i+1, skipHighlight)
     }
     this.AddHighlight();
   }
