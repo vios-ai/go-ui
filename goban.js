@@ -114,9 +114,11 @@ function GoBan(size = 19) {
     if (!this.canvas) {
       // First time, setup listener
       var self = this
-      c.addEventListener("mousedown", function(event) {
+      c.addEventListener("click", function(event) {
         self.clickPosition(event);
-      }, true);
+        event.preventDefault();
+        return false;
+      }, false);
       this.canvas = c;
     }
     this.Redraw()
