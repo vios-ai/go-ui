@@ -11,9 +11,20 @@
   <hr>
   <canvas id="goban2"></canvas>
   <hr>
-  <canvas id="goban3"></canvas><br />
-  <button type="submit" onclick="goban3.withCoordinates=!goban3.withCoordinates; goban3.Redraw();">Toggle Coordinates</button>
-  <button type="submit" onclick="goban3.Undo();">Undo last move</button>
+  <table>
+    <tr>
+      <td colspan="2">
+        <canvas id="goban3"></canvas>
+      </td>
+      <tr>
+        <td>
+          Coordinates: <input type="checkbox" onchange="goban3.withCoordinates=this.checked;goban3.Redraw();" checked />
+          Sounds: <input type="checkbox" onchange="goban3.withSounds=this.checked;" checked />
+        <td align="right">
+          <button type="submit" onclick="goban3.Undo();">Undo last move</button>
+        </td>
+      </tr>
+  </table>
   <script>
     var goban1 = new GoBan(); // defaults 19x19
     goban1.Draw(document.getElementById("goban1"));

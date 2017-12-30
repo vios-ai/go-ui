@@ -13,6 +13,7 @@ function GoBan(size = 19, scale = 24) {
     this.board[i] = new Array(size)
   }
   this.withCoordinates = true
+  this.withSounds = true
 
   // Draw 1 hoshi (star point) at x,y
   this.hoshi = function(x, y) {
@@ -127,7 +128,9 @@ function GoBan(size = 19, scale = 24) {
     var i = this.coordToPos(x)
     var j = this.coordToPos(y)
     if (this.isValid(i, j)) {
-      audio.play();
+      if (this.withSounds) {
+        audio.play();
+      }
       this.RecordMove(i, j, (this.game.length % 2 == 0) ? "black" : "white")
     } else {
       console.log("Invalid move " + i + " , " + j)
