@@ -20,12 +20,12 @@
       </td>
       <tr>
         <td>
-          Coordinates: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />
-          Sounds: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />
-          Last move highlight: <input type="checkbox" onchange="goban.withLastMoveHighlight=this.checked;goban.Redraw();" checked />
+          Coordinates: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />,
+          Sounds: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />,
+          Last move highlight: <input type="checkbox" onchange="goban.withLastMoveHighlight=this.checked;goban.Redraw();" checked />.
         </td>
         <td align="center">
-          Size
+          &nbsp;Size:
           <input type="radio" name="size" value="9" onchange="goban.n=9;resizeHandler();" checked> 9x9
           <input type="radio" name="size" value="13" onchange="goban.n=13;resizeHandler();"> 13x13
           <input type="radio" name="size" value="19" onchange="goban.n=19;resizeHandler();"> 19x19
