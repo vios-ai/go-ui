@@ -4,6 +4,11 @@
   <link rel="shortcut icon" href="favicon.ico">
   <title>GoBan - vios.ai</title>
   <script src="goban.js"></script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
+  </style>
 </head>
 
 <body onresize="resizeHandler()">
@@ -19,12 +24,12 @@
           Sounds: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />
         </td>
         <td align="center">
-          Size <select onchange="goban.n=parseInt(value);resizeHandler();">
-  <option value="19">19x19</option>
-  <option value="13">13x13</option>
-  <option value="9">9x9</option>
-</select>
-
+          Size
+          <select onchange="goban.n=parseInt(value);resizeHandler();">
+            <option value="19">19x19</option>
+            <option value="13">13x13</option>
+            <option value="9">9x9</option>
+          </select>
         </td>
         <td align="right">
           <button type="submit" onclick="goban.Undo();">Undo last move</button>
@@ -33,6 +38,7 @@
   </table>
   <script>
     var goban = new GoBan(19)
+
     function resizeHandler() {
       var size = goban.n
       console.log("Size is " + size)
@@ -41,7 +47,7 @@
         min = window.innerHeight
       }
       console.log("Min Height/Width is " + min)
-      var scale = 2*Math.floor(min * .95 / (size + 2) / 2)
+      var scale = 2 * Math.floor(min * .95 / (size + 2) / 2)
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
     }
