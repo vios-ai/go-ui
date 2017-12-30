@@ -1,6 +1,6 @@
 // Creates a goban of the requested size - each of the size lines are seperated
 // by scale pixels.
-function GoBan(size = 19, scale = 20) {
+function GoBan(size = 19, scale = 24) {
   this.n = size;
   this.sz1 = scale;
   this.stoneRadius = scale / 2 - .5;
@@ -37,6 +37,22 @@ function GoBan(size = 19, scale = 20) {
     }
   }
 
+  this.posToLetter = function(i) {
+    if (i >= 8) {
+      i++ // skip I
+    }
+    return String.fromCharCode(65+i)
+  }
+
+  this.drawCoordinates = function() {
+    for (var i=0; i<this.n; i++) {
+      this.ctx.fillText(""+(this.n-i), 0, this.posToCoord(i+.1))
+      this.ctx.fillText(""+(this.n-i), this.posToCoord(this.n-0.5), this.posToCoord(i+.1))
+      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.posToCoord(this.n - 0.1))
+      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.sz1/2)
+    }
+  }
+
   this.drawStone = function(x, y, color) {
     var highlight = "white"
     if (color == "white") {
@@ -66,8 +82,8 @@ function GoBan(size = 19, scale = 20) {
   // Draw the main board on the given canvas
   this.Draw = function(c) {
     this.canvas = c;
-    c.height = this.gobanSz;
-    c.width = this.gobanSz;
+    c.height = this.gobanSz + 30;
+    c.width = this.gobanSz + 30 ;
     var ctx = c.getContext("2d");
     this.ctx = ctx;
     ctx.fillStyle = "moccasin";
@@ -84,5 +100,6 @@ function GoBan(size = 19, scale = 20) {
     }
     ctx.stroke()
     this.drawHoshis()
+    this.drawCoordinates()
   }
 }
