@@ -1,8 +1,28 @@
 <html>
+
 <head>
-<link rel="shortcut icon" href="favicon.ico">
-<title>GoBan - vios.ai</title>
+  <link rel="shortcut icon" href="favicon.ico">
+  <title>GoBan - vios.ai</title>
+  <script src="goban.js"></script>
 </head>
+
 <body>
+
+  <body>
+    <canvas id="goban1"></canvas>
+    <hr>
+    <canvas id="goban2"></canvas>
+    <hr>
+    <canvas id="goban3"></canvas>
+  </body>
+  <script>
+    var goban1 = new GoBan(); // defaults 19x19
+    goban1.Draw(document.getElementById("goban1"));
+    var goban1 = new GoBan(13, 26);
+    goban1.Draw(document.getElementById("goban2"));
+    var goban2 = new GoBan(9, 32)
+    goban2.Draw(document.getElementById("goban3"));
+  </script>
 </body>
+
 </html>
