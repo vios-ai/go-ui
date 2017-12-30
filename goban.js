@@ -119,7 +119,7 @@ function GoBan(size = 19, scale = 24) {
     var j = this.coordToPos(y)
     if (this.isValid(i, j)) {
       audio.play();
-      this.drawStone(i, j, "orange")
+      this.RecordMove(i, j, (this.game.length % 2 == 0) ? "black" : "white")
     } else {
       console.log("Invalid click outside the goban " + i + " , " + j)
     }
