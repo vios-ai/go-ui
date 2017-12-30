@@ -1,12 +1,8 @@
 // Creates a goban of the requested size - each of the size lines are seperated
 // by scale pixels.
 // (c)2017 All Rights Reserved by Laurent Demailly
-function GoBan(size = 19, scale = 24) {
+function GoBan(size = 19) {
   this.n = size;
-  this.sz1 = scale;
-  this.stoneRadius = scale / 2 - .5;
-  this.gobanSz = (size + 1) * scale
-  this.delta = scale * 1.5;
   this.game = [];
   this.board = new Array(size)
   for (var i = 0; i < size; i++) {
@@ -76,6 +72,10 @@ function GoBan(size = 19, scale = 24) {
   }
 
   this.drawStone = function(x, y, color) {
+    if (this.OutOfBounds(x, y)) {
+      console.log("Skipping OOB " + x + " " + y)
+      return
+    }
     var highlight = "white"
     if (color == "white") {
       highlight = "black"
@@ -106,7 +106,11 @@ function GoBan(size = 19, scale = 24) {
   }
 
   // Draw the main board on the given canvas
-  this.Draw = function(c) {
+  this.Draw = function(c, scale = 24) {
+    this.sz1 = scale;
+    this.stoneRadius = scale / 2 - .5;
+    this.gobanSz = (this.n + 1) * scale
+    this.delta = scale * 1.5;
     this.canvas = c;
     var self = this
     c.addEventListener("mousedown", function(event) {
@@ -115,8 +119,12 @@ function GoBan(size = 19, scale = 24) {
     this.Redraw()
   }
 
+  this.OutOfBounds = function(i, j) {
+    return (i < 0 || j < 0 || i >= this.n || j >= this.n)
+  }
+
   this.isValid = function(i, j) {
-    if (i < 0 || j < 0 || i >= this.n || j >= this.n) {
+    if (this.OutOfBounds(i, j)) {
       return false
     }
     return !this.board[i][j]
@@ -139,11 +147,11 @@ function GoBan(size = 19, scale = 24) {
 
   this.Redraw = function() {
     c = this.canvas
+    var ctx = c.getContext("2d");
+    ctx.clearRect(0, 0, c.width, c.height);
     c.height = this.gobanSz + this.sz1;
     c.width = this.gobanSz + this.sz1;
-    var ctx = c.getContext("2d");
     this.ctx = ctx;
-    ctx.clearRect(0, 0, c.width, c.height);
     ctx.fillStyle = "moccasin";
     ctx.fillRect(this.sz1 / 2, this.sz1 / 2, this.gobanSz, this.gobanSz);
     ctx.fillStyle = "black";

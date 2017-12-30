@@ -28,10 +28,10 @@
   <script>
     var goban1 = new GoBan(); // defaults 19x19
     goban1.Draw(document.getElementById("goban1"));
-    var goban2 = new GoBan(13, 30);
-    goban2.Draw(document.getElementById("goban2"));
-    var goban3 = new GoBan(9, 60)
-    goban3.Draw(document.getElementById("goban3"));
+    var goban2 = new GoBan(13);
+    goban2.Draw(document.getElementById("goban2"), 30);
+    var goban3 = new GoBan(9)
+    goban3.Draw(document.getElementById("goban3"), 60);
 
     function test1(g) {
       g.RecordMove(3, 2, "black");
