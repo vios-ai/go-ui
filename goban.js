@@ -6,6 +6,8 @@ function GoBan(size = 19, scale = 24) {
   this.stoneRadius = scale / 2 - .5;
   this.gobanSz = (size + 1) * scale
   this.delta = scale * 1.5;
+  this.game = [];
+  this.withCoordinates = true
 
   // Draw 1 hoshi (star point) at x,y
   this.hoshi = function(x, y) {
@@ -41,21 +43,30 @@ function GoBan(size = 19, scale = 24) {
     if (i >= 8) {
       i++ // skip I
     }
-    return String.fromCharCode(65+i)
+    return String.fromCharCode(65 + i)
   }
 
   this.drawCoordinates = function() {
-    this.ctx.font="bold "+this.sz1*.38+"px Arial"
+    this.ctx.font = "bold " + this.sz1 * .38 + "px Arial"
     this.ctx.fillStyle = "DimGray"
-    //this.ctx.font="30px Arial";
-    for (var i=0; i<this.n; i++) {
-      this.ctx.fillText(""+(this.n-i), this.posToCoord(-1.52), this.posToCoord(i+.1))
-      this.ctx.fillText(""+(this.n-i), this.posToCoord(this.n+.1), this.posToCoord(i+.15))
-      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.posToCoord(this.n + 0.35))
-      this.ctx.fillText(this.posToLetter(i), this.posToCoord(i-0.1), this.sz1/3)
+    for (var i = 0; i < this.n; i++) {
+      var num = "" + (this.n - i)
+      this.ctx.fillText(num, this.posToCoord(-1.52), this.posToCoord(i + .1))
+      this.ctx.fillText(num, this.posToCoord(this.n + .1), this.posToCoord(i + .15))
+      var letter = this.posToLetter(i)
+      this.ctx.fillText(letter, this.posToCoord(i - 0.1), this.posToCoord(this.n + 0.35))
+      this.ctx.fillText(letter, this.posToCoord(i - 0.1), this.sz1 / 3)
     }
   }
 
+  this.RecordMove = function(x, y, color) {
+    this.game.push({
+      x,
+      y,
+      color
+    });
+    this.drawStone(x, y, color);
+  }
   this.drawStone = function(x, y, color) {
     var highlight = "white"
     if (color == "white") {
@@ -86,11 +97,12 @@ function GoBan(size = 19, scale = 24) {
   this.Draw = function(c) {
     this.canvas = c;
     c.height = this.gobanSz + this.sz1;
-    c.width = this.gobanSz + this.sz1 ;
+    c.width = this.gobanSz + this.sz1;
     var ctx = c.getContext("2d");
     this.ctx = ctx;
+    ctx.clearRect(0, 0, c.width, c.height);
     ctx.fillStyle = "moccasin";
-    ctx.fillRect(this.sz1/2, this.sz1/2, this.gobanSz, this.gobanSz);
+    ctx.fillRect(this.sz1 / 2, this.sz1 / 2, this.gobanSz, this.gobanSz);
     ctx.fillStyle = "black";
     var zero = this.posToCoord(0)
     var last = this.posToCoord(this.n - 1)
@@ -103,6 +115,14 @@ function GoBan(size = 19, scale = 24) {
     }
     ctx.stroke()
     this.drawHoshis()
-    this.drawCoordinates()
+    if (this.withCoordinates) {
+      this.drawCoordinates()
+    }
+    for (var i = 0; i < this.game.length; i++) {
+      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color)
+    }
+  }
+  this.Redraw = function() {
+    this.Draw(this.canvas)
   }
 }
