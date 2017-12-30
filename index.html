@@ -21,9 +21,8 @@
       <tr>
         <td>
           Coords: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />,
-          Sound: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />,
           Move#: <input type="checkbox" onchange="goban.withMoveNumbers=this.checked;goban.Redraw();" checked />,
-          Last move: <input type="checkbox" onchange="goban.withLastMoveHighlight=this.checked;goban.Redraw();" checked />.
+          Sound: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />
         </td>
         <td align="center">
           &nbsp;Size:
@@ -39,7 +38,7 @@
         -->
         </td>
         <td align="right">
-          <button type="submit" onclick="goban.Undo();">Undo last move</button>
+          <button type="submit" onmouseover="goban.withLastMoveHighlight=true; goban.Redraw();" onmouseout="goban.withLastMoveHighlight=false; goban.Redraw();" onclick="goban.Undo();">Undo last move</button>
         </td>
       </tr>
   </table>

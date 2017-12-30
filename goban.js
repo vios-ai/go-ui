@@ -16,7 +16,7 @@ function GoBan(size = 19) {
   }
   this.withCoordinates = true
   this.withSounds = true
-  this.withLastMoveHighlight = true
+  this.withLastMoveHighlight = false
   this.withMoveNumbers = true
 
   // Draw 1 hoshi (star point) at x,y
@@ -182,6 +182,14 @@ function GoBan(size = 19) {
       var self = this
       c.addEventListener("mousedown", function(event) {
         self.clickPosition(event);
+      });
+      c.addEventListener("mouseleave", function(event) {
+        self.withLastMoveHighlight = false;
+        self.Redraw();
+      });
+      c.addEventListener("mouseenter", function(event) {
+        self.withLastMoveHighlight = true;
+        self.Redraw();
       });
       this.canvas = c;
     }
