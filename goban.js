@@ -8,6 +8,10 @@ function GoBan(size = 19, scale = 24) {
   this.gobanSz = (size + 1) * scale
   this.delta = scale * 1.5;
   this.game = [];
+  this.board = new Array(size)
+  for (var i = 0; i < size; i++) {
+    this.board[i] = new Array(size)
+  }
   this.withCoordinates = true
 
   // Draw 1 hoshi (star point) at x,y
@@ -66,8 +70,10 @@ function GoBan(size = 19, scale = 24) {
       y,
       color
     });
+    this.board[x][y] = color
     this.drawStone(x, y, color);
   }
+
   this.drawStone = function(x, y, color) {
     var highlight = "white"
     if (color == "white") {
@@ -109,7 +115,10 @@ function GoBan(size = 19, scale = 24) {
   }
 
   this.isValid = function(i, j) {
-    return (i >= 0 && j >= 0 && i < this.n && j < this.n)
+    if (i < 0 || j < 0 || i >= this.n || j > this.n) {
+      return false
+    }
+    return !this.board[i][j]
   }
 
   this.clickPosition = function(event) {
@@ -121,7 +130,7 @@ function GoBan(size = 19, scale = 24) {
       audio.play();
       this.RecordMove(i, j, (this.game.length % 2 == 0) ? "black" : "white")
     } else {
-      console.log("Invalid click outside the goban " + i + " , " + j)
+      console.log("Invalid move " + i + " , " + j)
     }
   }
 
@@ -152,6 +161,18 @@ function GoBan(size = 19, scale = 24) {
     for (var i = 0; i < this.game.length; i++) {
       this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color)
     }
+  }
+
+  this.Undo = function() {
+    var l = this.game.length
+    if (l == 0) {
+      return
+    }
+    l--
+    var pos = this.game[l]
+    this.game.length = l // truncate
+    delete this.board[pos.x][pos.y]
+    this.Redraw()
   }
 
 }
