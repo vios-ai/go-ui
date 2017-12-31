@@ -26,6 +26,27 @@ class GoGame {
   c2idx(i, j) {
     return i * this.n + j
   }
+  idx2c(p) {
+    return [Math.floor(p / this.n), p % this.n]
+  }
+
+  Neighbors(p) {
+    var res = []
+    var [x, y] = this.idx2c(p)
+    if (x > 0) {
+      res.push(this.c2idx(x - 1, y))
+    }
+    if (x < this.n - 1) {
+      res.push(this.c2idx(x + 1, y))
+    }
+    if (y > 0) {
+      res.push(this.c2idx(x, y - 1))
+    }
+    if (y < this.n - 1) {
+      res.push(this.c2idx(x, y + 1))
+    }
+    return res
+  }
 
   HasCapture() {
     return this.hascapture
@@ -58,8 +79,12 @@ class GoGame {
       y: j,
       color: stone,
       merged: false,
+      capture: false,
     })
-    this.board[p] = this.GetGid(i, j, p, stone)
+    var gid = this.GetGid(i, j, p, stone)
+    this.board[p] = gid
+    this.RemoveLiberty(gid, p); // TODO: if this is suicide, it's illegal
+    this.history[this.history.length - 1].capture = true
     return true
   }
 
@@ -72,13 +97,23 @@ class GoGame {
   }
 
   DeleteGroup(gid) {
+    console.log("Deleting group " + gid)
     this.hascapture = true
     var g = this.groups[gid]
     for (var i = 0; i < g.length; i++) {
       var p = g[i]
       this.board[p] = Stones.EMPTY
-      // TODO: add liberties back to neighbors
+      var n = this.Neighbors(p);
+      for (var j = 0; j < n.length; j++) {
+        var pp = n[j]
+        var c = this.board[pp]
+        if (c && !GoGame.SameColor(gid, c)) {
+          this.liberties[c].add(p)
+        }
+      }
     }
+    delete this.groups[gid]
+    delete this.liberties[gid]
   }
 
   LastMoveMergedGroups() {
@@ -89,7 +124,18 @@ class GoGame {
     return this.history[l].merged
   }
 
+  LastMoveHadCapture() {
+    var l = this.history.length - 1;
+    if (l < 0) {
+      return false;
+    }
+    return this.history[l].capture
+  }
+
+
   // TODO: refactor, ugly
+  // TODO: liberty for solo killing stone isn't set right because the group
+  // doesn't exist yet when the liberties from group removal are added.
   GetGid(i, j, p, stone) {
     var gid = this.history.length
     var merge = 0
@@ -179,7 +225,6 @@ class GoGame {
       for (var v of liberties) {
         this.liberties[gid].add(v)
       }
-      this.RemoveLiberty(gid, p); // TODO: if this is suicide, it's illegal
       if (merge > 1) {
         // Mark this move as creating a merge (need refresh and special undo)
         this.history[this.history.length - 1].merged = true
@@ -232,8 +277,8 @@ class GoGame {
     l--
     var pos = this.history[l]
     this.history.length = l // truncate
-    if (pos.merged) {
-      // there was a multi merge... let's replay everything brute force
+    if (pos.merged || pos.capture) {
+      // there was a multi merge or capture... let's replay everything brute force
       this.ReplayHistory()
     } else {
       // no multi merge so we just need to erase that stone
@@ -255,6 +300,7 @@ class GoGame {
 
 
 // UI / Drawing
+// TODO: show liberties actual location on mouse over ? (and count somewhere else than on stones)
 class GoBan extends GoGame {
   constructor(size = 19) {
     super(size)
@@ -386,7 +432,7 @@ class GoBan extends GoGame {
       console.log("Skipping OOB " + i + " " + j)
       return
     }
-    if (this.Empty(i,j)) {
+    if (this.Empty(i, j)) {
       console.log("Skipping removed stone " + i + " " + j)
       return
     }
@@ -464,7 +510,7 @@ class GoBan extends GoGame {
     var j = this.coordToPos(y)
     var color = (this.history.length % 2 == 0) ? Stones.BLACK : Stones.WHITE;
     if (this.RecordMove(i, j, color)) {
-      if ( this.HasCapture() || /*this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
+      if (this.HasCapture() || /*this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
         this.Redraw()
       }
       console.log("Valid move #" + this.history.length + " at " + i + " , " + j + " for " + this.Color(color))
