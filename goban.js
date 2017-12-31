@@ -7,6 +7,7 @@ var Stones = {
   WHITE: 2,
 };
 
+
 // Logic
 class GoGame {
 
@@ -23,27 +24,44 @@ class GoGame {
     this.hascapture = false
   }
 
+  // x,y coordinates to flat array coordinates
   c2idx(i, j) {
     return i * this.n + j
   }
+  // flat index coordinates back to x,y coordinates
   idx2c(p) {
     return [Math.floor(p / this.n), p % this.n]
   }
 
+  // Update a Neighbors result object based what is contained at position i
+  updateN(res, i) {
+    res.idxs.push(i)
+    var v = this.board[i]
+    var color = GoGame.ThisColor(v)
+    // push either the gids in the set, or for empty just the liberties coords
+    res.types[color].add(color == Stones.EMPTY ? i : v)
+  }
+
+  // Returns the neighbors at position p
   Neighbors(p) {
-    var res = []
+    var res = {
+      // Indexes (positions)
+      idxs: [],
+      // Sets by neighbor type
+      types: [new Set() /* empty/liberties */ , new Set() /* black */ , new Set() /* white */ ],
+    }
     var [x, y] = this.idx2c(p)
     if (x > 0) {
-      res.push(this.c2idx(x - 1, y))
+      this.updateN(res, this.c2idx(x - 1, y))
     }
     if (x < this.n - 1) {
-      res.push(this.c2idx(x + 1, y))
+      this.updateN(res, this.c2idx(x + 1, y))
     }
     if (y > 0) {
-      res.push(this.c2idx(x, y - 1))
+      this.updateN(res, this.c2idx(x, y - 1))
     }
     if (y < this.n - 1) {
-      res.push(this.c2idx(x, y + 1))
+      this.updateN(res, this.c2idx(x, y + 1))
     }
     return res
   }
@@ -59,6 +77,7 @@ class GoGame {
     }
     return this.liberties[p].size
   }
+
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
   Place(i, j, stone, checkoob = true) {
@@ -81,35 +100,38 @@ class GoGame {
       merged: false,
       capture: false,
     })
-    var gid = this.GetGid(i, j, p, stone)
-    this.board[p] = gid
-    this.RemoveLiberty(gid, p); // TODO: if this is suicide, it's illegal
-    this.history[this.history.length - 1].capture = true
+    var gid = this.Update(i, j, p, stone)
+    var suicide = this.RemoveLiberty(gid, p)
+    this.history[this.history.length - 1].capture = this.hascapture
+    if (suicide) {
+      console.log("Illegal suicide");
+      this.Undo()
+      return false
+    }
     return true
   }
 
   RemoveLiberty(from, which) {
     this.liberties[from].delete(which)
-    if (this.liberties[from].size == 0) {
-      // last liberty is gone, delete this group
-      this.DeleteGroup(from)
+    if (this.liberties[from].size != 0) {
+      return false;
     }
+    // last liberty is gone, delete this group
+    this.DeleteGroup(from)
+    return true
   }
 
   DeleteGroup(gid) {
     console.log("Deleting group " + gid)
     this.hascapture = true
     var g = this.groups[gid]
+    var otherColor = GoGame.OtherColor(gid)
     for (var i = 0; i < g.length; i++) {
       var p = g[i]
       this.board[p] = Stones.EMPTY
       var n = this.Neighbors(p);
-      for (var j = 0; j < n.length; j++) {
-        var pp = n[j]
-        var c = this.board[pp]
-        if (c && !GoGame.SameColor(gid, c)) {
-          this.liberties[c].add(p)
-        }
+      for (var c of n.types[otherColor]) {
+        this.liberties[c].add(p);
       }
     }
     delete this.groups[gid]
@@ -132,103 +154,28 @@ class GoGame {
     return this.history[l].capture
   }
 
-
-  // TODO: refactor, ugly
-  // TODO: liberty for solo killing stone isn't set right because the group
-  // doesn't exist yet when the liberties from group removal are added.
-  GetGid(i, j, p, stone) {
+  Update(i, j, p, stone) {
     var gid = this.history.length
-    var merge = 0
-    var liberties = new Set()
-    if (i > 0) {
-      var pp = this.c2idx(i - 1, j)
-      var left = this.board[pp]
-      if (!left) {
-        liberties.add(pp)
-      } else {
-        if (GoGame.SameColor(left, stone)) {
-          gid = left
-          merge++
-        } else {
-          // opposite group; let's remove this liberty
-          this.RemoveLiberty(left, p);
-        }
-      }
+    var sameColor = GoGame.ThisColor(gid)
+    var otherColor = GoGame.OtherColor(gid)
+    // Place as new group first:
+    var n = this.Neighbors(p)
+    this.groups[gid] = [p]
+    this.liberties[gid] = n.types[Stones.EMPTY]
+    this.board[p] = gid
+    // Kill enemies (which may restore liberties to this group)
+    for (var g of n.types[otherColor]) {
+      this.RemoveLiberty(g, p);
     }
-    if (i < this.n - 1) {
-      var pp = this.c2idx(i + 1, j)
-      var right = this.board[pp]
-      if (!right) {
-        liberties.add(pp)
-      } else {
-        if (!GoGame.SameColor(right, stone)) {
-          this.RemoveLiberty(right, p);
-        } else {
-          // make sure we don't create an infinite loop by merging with oneself
-          if (right != gid) {
-            if (merge) {
-              gid = this.Merge(gid, right)
-            } else {
-              gid = right
-            }
-            merge++
-          }
-        }
-      }
+    // Merge friendly groups
+    var merge = n.types[sameColor].size
+    for (var g of n.types[sameColor]) {
+      gid = this.Merge(g, gid)
     }
-    if (j > 0) {
-      var pp = this.c2idx(i, j - 1)
-      var top = this.board[pp]
-      if (!top) {
-        liberties.add(pp)
-      } else {
-        if (!GoGame.SameColor(top, stone)) {
-          this.RemoveLiberty(top, p);
-        } else {
-          if (top != gid) {
-            if (merge) {
-              gid = this.Merge(gid, top)
-            } else {
-              gid = top
-            }
-            merge++
-          }
-        }
-      }
-    }
-    if (j < this.n - 1) {
-      var pp = this.c2idx(i, j + 1)
-      var bottom = this.board[pp]
-      if (!bottom) {
-        liberties.add(pp)
-      } else {
-        if (!GoGame.SameColor(bottom, stone)) {
-          this.RemoveLiberty(bottom, p);
-        } else {
-          if (bottom != gid) {
-            if (merge) {
-              gid = this.Merge(gid, bottom)
-            } else {
-              gid = bottom
-            }
-            merge++
-          }
-        }
-      }
-    }
-    console.log("Merged " + merge + " -> " + gid + " liberties=" + liberties.size)
-    if (!merge) {
-      this.groups[gid] = [p]
-      this.liberties[gid] = liberties
-    } else {
-      this.groups[gid].push(p)
-      for (var v of liberties) {
-        this.liberties[gid].add(v)
-      }
-      if (merge > 1) {
-        // Mark this move as creating a merge (need refresh and special undo)
-        this.history[this.history.length - 1].merged = true
-      }
+    console.log("Merged " + merge + " -> " + gid + " liberties=" + this.liberties[gid].size)
+    if (merge > 1) {
+      // Mark this move as creating a merge (need refresh and special undo)
+      this.history[this.history.length - 1].merged = true
     }
     return gid
   }
@@ -256,6 +203,20 @@ class GoGame {
 
   static SameColor(s1, s2) {
     return (s1 > 0 && s2 > 0) && (s1 % 2 == s2 % 2)
+  }
+
+  static OtherColor(gid) {
+    if (!gid || gid < 0) {
+      return Stones.EMPTY
+    }
+    return GoGame.ThisColor(gid + 1)
+  }
+
+  static ThisColor(gid) {
+    if (!gid || gid < 0) {
+      return Stones.EMPTY
+    }
+    return (gid % 2) ? Stones.BLACK : Stones.WHITE
   }
 
   // Are the coordinates out of bound ?
