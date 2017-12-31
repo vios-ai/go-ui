@@ -22,13 +22,14 @@
         <td>
           Coords: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />,
           Move#: <input type="checkbox" onchange="goban.withMoveNumbers=this.checked;goban.Redraw();" checked />,
+          Group#: <input type="checkbox" onchange="goban.withGroupNumbers=this.checked;goban.Redraw();" />,
           Sound: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />
         </td>
         <td align="center">
           &nbsp;Size:
-          <input type="radio" name="size" value="9" onchange="goban.n=9;resizeHandler();" checked> 9x9
-          <input type="radio" name="size" value="13" onchange="goban.n=13;resizeHandler();"> 13x13
-          <input type="radio" name="size" value="19" onchange="goban.n=19;resizeHandler();"> 19x19
+          <input type="radio" name="size" value="9" onchange="goban.Resize(9);resizeHandler();" checked> 9x9
+          <input type="radio" name="size" value="13" onchange="goban.Resize(13);resizeHandler();"> 13x13
+          <input type="radio" name="size" value="19" onchange="goban.Resize(19);resizeHandler();"> 19x19
           <!--
           <select onchange="goban.n=parseInt(value);resizeHandler();">
             <option value="19">19x19</option>
@@ -59,6 +60,23 @@
       //goban.drawStone(1,1, "orange", 399)
     }
     resizeHandler()
+/* infinite loop bug repro (fixed now) */
+/*
+    goban.RecordMove(6,6,1,);
+    goban.RecordMove(6,2,2,);
+    goban.RecordMove(2,6,1,);
+    goban.RecordMove(5,3,2,);
+    goban.RecordMove(5,5,1,);
+    goban.RecordMove(7,3,2,);
+    goban.RecordMove(4,5,1,);
+    goban.RecordMove(5,4,2,);
+    goban.RecordMove(3,6,1,);
+    goban.RecordMove(7,4,2,);
+    goban.RecordMove(4,7,1,);
+    goban.RecordMove(6,3,2,);
+    goban.RecordMove(5,6,1,);
+    goban.RecordMove(3,7,2,);
+*/
   </script>
 </body>
 

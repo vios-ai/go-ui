@@ -1,11 +1,10 @@
-// Creates a goban of the requested size - each of the size lines are seperated
-// by scale pixels.
+// Go game and goban model and canvas drawing.
 // (c)2017 All Rights Reserved by Laurent Demailly
 
 var Stones = {
   EMPTY: 0, // evaluates to false
   BLACK: 1,
-  WHITE: -1,
+  WHITE: 2,
 };
 
 // Logic
@@ -13,11 +12,12 @@ class GoGame {
 
   constructor(size) {
     this.n = size
+    this.Reset()
+  }
+
+  Reset() {
     this.history = [];
-    // This linear array will grow without crashing in case of resizes
-    // but will be incorrect. TODO: resize() or not let that feature preserve
-    // moves
-    this.board = new Array(size * size)
+    this.board = new Array(this.n * this.n)
     this.groups = [];
   }
 
@@ -27,8 +27,8 @@ class GoGame {
 
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
-  Place(i, j, stone) {
-    if (this.OutOfBounds(i, j)) {
+  Place(i, j, stone, checkoob=true) {
+    if (checkoob && this.OutOfBounds(i, j)) {
       return false
     }
     var p = this.c2idx(i, j)
@@ -39,13 +39,100 @@ class GoGame {
     if (this.board[p]) {
       return false
     }
-    this.board[p] = stone
     this.history.push({
       x: i,
       y: j,
-      color: stone
+      color: stone,
+      merged: false,
     })
+    this.board[p] = this.GetGid(i, j, p, stone)
     return true
+  }
+
+  LastMoveMergedGroups() {
+    var l = this.history.length - 1;
+    if (l < 0) {
+      return false;
+    }
+    return this.history[l].merged
+  }
+
+  GetGid(i, j, p, stone) {
+    var gid = this.history.length
+    var merge = 0
+    if (i > 0) {
+      var left = this.At(i - 1, j)
+      if (GoGame.SameColor(left, stone)) {
+        gid = left
+        merge++
+      }
+    }
+    if (i < this.n - 1) {
+      var right = this.At(i + 1, j)
+      // make sure we don't create an infinite loop by merging with oneself
+      if (right != gid && GoGame.SameColor(right, stone)) {
+        if (merge) {
+          gid = this.Merge(gid, right)
+        } else {
+          gid = right
+        }
+        merge++
+      }
+    }
+    if (j > 0) {
+      var top = this.At(i, j - 1)
+      if (top != gid && GoGame.SameColor(top, stone)) {
+        if (merge) {
+          gid = this.Merge(gid, top)
+        } else {
+          gid = top
+        }
+        merge++
+      }
+    }
+    if (j < this.n - 1) {
+      var bottom = this.At(i, j + 1)
+      if (bottom != gid && GoGame.SameColor(bottom, stone)) {
+        if (merge) {
+          gid = this.Merge(gid, bottom)
+        } else {
+          gid = bottom
+        }
+        merge++
+      }
+    }
+    console.log("Merged " + merge + " -> " + gid)
+    if (!merge) {
+      this.groups[gid] = [p]
+    } else {
+      this.groups[gid].push(p)
+      if (merge > 1) {
+        // Mark this move as creating a merge (need refresh and special undo)
+        this.history[this.history.length - 1].merged = true
+      }
+    }
+    return gid
+  }
+
+  Merge(gid1, gid2) {
+    if (gid1 == gid2) {
+      console.log("BUG!!! same gid " + gid1)
+      return "BUG"
+    }
+    if (gid1 > gid2) {
+      [gid1, gid2] = [gid2, gid1]
+    }
+    for (var i = 0; i < this.groups[gid2].length; i++) {
+      var p = this.groups[gid2][i]
+      this.board[p] = gid1
+      this.groups[gid1].push(p)
+    }
+    delete this.groups[gid2]
+    return gid1
+  }
+
+  static SameColor(s1, s2) {
+    return (s1 > 0 && s2 > 0) && (s1 % 2 == s2 % 2)
   }
 
   // Are the coordinates out of bound ?
@@ -54,9 +141,11 @@ class GoGame {
   }
   // Is that position empty.
   Empty(i, j) {
-    return !this.board[this.c2idx(i, j)]
+    return !At(i, j)
   }
-
+  At(i, j) {
+    return this.board[this.c2idx(i, j)]
+  }
   Undo() {
     var l = this.history.length
     if (l == 0) {
@@ -65,8 +154,24 @@ class GoGame {
     l--
     var pos = this.history[l]
     this.history.length = l // truncate
-    this.Place(pos.x, pos.y, Stones.EMPTY)
+    if (pos.merged) {
+      // there was a multi merge... let's replay everything brute force
+      this.ReplayHistory()
+    } else {
+      // no multi merge so we just need to erase that stone
+      this.Place(pos.x, pos.y, Stones.EMPTY)
+    }
     return true
+  }
+
+  ReplayHistory() {
+    var h = this.history
+    console.log("Replay all")
+    this.Reset();
+    for (var i = 0; i < h.length; i++) {
+      var pos = h[i]
+      this.Place(pos.x, pos.y, pos.color, false /* don't check oob, for resize */)
+    }
   }
 }
 
@@ -79,6 +184,7 @@ class GoBan extends GoGame {
     this.withSounds = true
     this.withLastMoveHighlight = false
     this.withMoveNumbers = true
+    this.withGroupNumbers = false
   }
   // Draw 1 hoshi (star point) at x,y
   hoshi(x, y) {
@@ -217,12 +323,15 @@ class GoBan extends GoGame {
       ctx.arc(x, y, this.stoneRadius * .7, 0.15, Math.PI / 2 - .15);
       ctx.stroke();
     }
-    if (num > 0 && this.withMoveNumbers) {
+    if (num && (this.withMoveNumbers || this.withGroupNumbers)) {
       ctx.fillStyle = highlight;
       ctx.textAlign = "center";
       // checked it fits with highlight and 399
       var fontSz = Math.round(this.sz1 * .35 * 10) / 10
       ctx.font = "" + fontSz + "px Arial";
+      if (this.withGroupNumbers) {
+        num = this.At(i, j)
+      }
       ctx.fillText("" + num, x, y + fontSz / 3);
     }
     ctx.beginPath();
@@ -273,6 +382,9 @@ class GoBan extends GoGame {
     var j = this.coordToPos(y)
     var color = (this.history.length % 2 == 0) ? Stones.BLACK : Stones.WHITE;
     if (this.RecordMove(i, j, color)) {
+      if (this.LastMoveMergedGroups() && this.withGroupNumbers) {
+        this.Redraw()
+      }
       console.log("Valid move #" + this.history.length + " at " + i + " , " + j + " for " + this.Color(color))
       if (this.withSounds) {
         audio.play();
@@ -318,6 +430,14 @@ class GoBan extends GoGame {
     if (super.Undo()) {
       this.Redraw()
     }
+  }
+
+  Resize(n) {
+    if (this.n == n) {
+      return // noop
+    }
+    this.n = n
+    this.ReplayHistory()
   }
 
 }
