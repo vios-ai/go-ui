@@ -4,23 +4,24 @@
 
 var GoBanMaxSize = 19
 
-function GoBan(size = 19) {
-  this.n = size;
-  this.game = [];
-  if (size > GoBanMaxSize) {
-    GoBanMaxSize = size
+class GoBan {
+  constructor(size = 19) {
+    this.n = size;
+    this.game = [];
+    if (size > GoBanMaxSize) {
+      GoBanMaxSize = size
+    }
+    this.board = new Array(GoBanMaxSize)
+    for (var i = 0; i < GoBanMaxSize; i++) {
+      this.board[i] = new Array(GoBanMaxSize)
+    }
+    this.withCoordinates = true
+    this.withSounds = true
+    this.withLastMoveHighlight = false
+    this.withMoveNumbers = true
   }
-  this.board = new Array(GoBanMaxSize)
-  for (var i = 0; i < GoBanMaxSize; i++) {
-    this.board[i] = new Array(GoBanMaxSize)
-  }
-  this.withCoordinates = true
-  this.withSounds = true
-  this.withLastMoveHighlight = false
-  this.withMoveNumbers = true
-
   // Draw 1 hoshi (star point) at x,y
-  this.hoshi = function(x, y) {
+  hoshi(x, y) {
     var ctx = this.ctx
     ctx.fillStyle = "black";
     ctx.beginPath();
@@ -29,7 +30,7 @@ function GoBan(size = 19) {
   }
 
   // Draw all the hoshis
-  this.drawHoshis = function() {
+  drawHoshis() {
     var mid = (this.n - 1) / 2
     this.hoshi(mid, mid)
     var h = 3
@@ -49,14 +50,14 @@ function GoBan(size = 19) {
     }
   }
 
-  this.posToLetter = function(i) {
+  posToLetter(i) {
     if (i >= 8) {
       i++ // skip I
     }
     return String.fromCharCode(65 + i)
   }
 
-  this.drawCoordinates = function() {
+  drawCoordinates() {
     this.ctx.font = "bold " + this.sz1 * .38 + "px Arial"
     this.ctx.fillStyle = "DimGray"
     for (var i = 0; i < this.n; i++) {
@@ -69,7 +70,7 @@ function GoBan(size = 19) {
     }
   }
 
-  this.AddHighlight = function() {
+  AddHighlight() {
     var l = this.game.length
     if ((!this.withLastMoveHighlight) || (l == 0)) {
       return
@@ -84,7 +85,7 @@ function GoBan(size = 19) {
     ctx.strokeStyle = highlight;
     ctx.lineWidth = 2;
     var rs = this.stoneRadius * .6
-    var len = rs/3
+    var len = rs / 3
     var x = this.posToCoord(lastMove.x)
     var y = this.posToCoord(lastMove.y)
     ctx.moveTo(x - rs, y - rs)
@@ -98,7 +99,7 @@ function GoBan(size = 19) {
     ctx.stroke();
   }
 
-  this.RemoveHighlight = function() {
+  RemoveHighlight() {
     var l = this.game.length;
     if ((!this.withLastMoveHighlight) || (l == 0)) {
       return
@@ -107,7 +108,7 @@ function GoBan(size = 19) {
     this.drawStone(lastMove.x, lastMove.y, lastMove.color, l)
   }
 
-  this.RecordMove = function(x, y, color) {
+  RecordMove(x, y, color) {
     this.RemoveHighlight();
     this.game.push({
       x,
@@ -119,7 +120,7 @@ function GoBan(size = 19) {
     this.AddHighlight();
   }
 
-  this.HighlightColor = function(color) {
+  HighlightColor(color) {
     if (color == "white") {
       return "black"
     } else {
@@ -127,7 +128,7 @@ function GoBan(size = 19) {
     }
   }
 
-  this.drawStone = function(i, j, color, num, skipHighlight = false) {
+  drawStone(i, j, color, num, skipHighlight = false) {
     if (this.OutOfBounds(i, j)) {
       console.log("Skipping OOB " + i + " " + j)
       return
@@ -149,11 +150,11 @@ function GoBan(size = 19) {
     }
     if (num > 0 && this.withMoveNumbers) {
       ctx.fillStyle = highlight;
-      ctx.textAlign="center";
+      ctx.textAlign = "center";
       // checked it fits with highlight and 399
-      var fontSz = Math.round(this.sz1 * .35 * 10)/10
+      var fontSz = Math.round(this.sz1 * .35 * 10) / 10
       ctx.font = "" + fontSz + "px Arial";
-      ctx.fillText(""+num, x, y+fontSz/3);
+      ctx.fillText("" + num, x, y + fontSz / 3);
     }
     ctx.beginPath();
     ctx.strokeStyle = "grey"
@@ -162,17 +163,17 @@ function GoBan(size = 19) {
   }
 
   // internal utility for coord -> pixels translation
-  this.posToCoord = function(x) {
+  posToCoord(x) {
     // need 0.5 to look sharp/black instead of grey
     return 0.5 + this.delta + x * this.sz1;
   }
   // inverse of above
-  this.coordToPos = function(x) {
+  coordToPos(x) {
     return Math.round((x - 0.5 - this.delta) / this.sz1);
   }
 
   // Draw the main board on the given canvas
-  this.Draw = function(c, scale = 24) {
+  Draw(c, scale = 24) {
     this.sz1 = scale;
     this.stoneRadius = scale / 2 - .5;
     this.gobanSz = (this.n + 1) * scale
@@ -196,18 +197,18 @@ function GoBan(size = 19) {
     this.Redraw()
   }
 
-  this.OutOfBounds = function(i, j) {
+  OutOfBounds(i, j) {
     return (i < 0 || j < 0 || i >= this.n || j >= this.n)
   }
 
-  this.isValid = function(i, j) {
+  isValid(i, j) {
     if (this.OutOfBounds(i, j)) {
       return false
     }
     return !this.board[i][j]
   }
 
-  this.clickPosition = function(event) {
+  clickPosition(event) {
     var x = event.offsetX
     var y = event.offsetY
     var i = this.coordToPos(x)
@@ -223,8 +224,8 @@ function GoBan(size = 19) {
     }
   }
 
-  this.Redraw = function() {
-    c = this.canvas
+  Redraw() {
+    var c = this.canvas
     var ctx = c.getContext("2d");
     ctx.clearRect(0, 0, c.width, c.height);
     c.height = this.gobanSz + this.sz1;
@@ -250,12 +251,12 @@ function GoBan(size = 19) {
     var len = this.game.length - 1
     for (var i = 0; i <= len; i++) {
       var skipHighlight = (i == len && this.withLastMoveHighlight) // for the last move
-      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color, i+1, skipHighlight)
+      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color, i + 1, skipHighlight)
     }
     this.AddHighlight();
   }
 
-  this.Undo = function() {
+  Undo() {
     var l = this.game.length
     if (l == 0) {
       return
