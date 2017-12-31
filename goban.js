@@ -19,15 +19,23 @@ class GoGame {
     this.history = [];
     this.board = new Array(this.n * this.n)
     this.groups = [];
+    this.liberties = []; // matches the group
   }
 
   c2idx(i, j) {
     return i * this.n + j
   }
 
+  Liberties(i, j) {
+    var p = this.At(i, j)
+    if (!p) {
+      return "x"
+    }
+    return this.liberties[p].size
+  }
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
-  Place(i, j, stone, checkoob=true) {
+  Place(i, j, stone, checkoob = true) {
     if (checkoob && this.OutOfBounds(i, j)) {
       return false
     }
@@ -49,6 +57,24 @@ class GoGame {
     return true
   }
 
+  RemoveLiberty(from, which) {
+    this.liberties[from].delete(which)
+    if (this.liberties[from].size == 0) {
+      // last liberty is gone, delete this group
+      this.DeleteGroup(from)
+    }
+  }
+
+  DeleteGroup(gid) {
+    var g = this.groups[gid]
+    for (var i = 0; i < g.length; i++) {
+      var p = g[i]
+      this.board[p] = Stones.EMPTY
+      // TODO: add liberties back to neighbors
+      // TODO: repaint
+    }
+  }
+
   LastMoveMergedGroups() {
     var l = this.history.length - 1;
     if (l < 0) {
@@ -57,55 +83,97 @@ class GoGame {
     return this.history[l].merged
   }
 
+  // TODO: refactor, ugly
   GetGid(i, j, p, stone) {
     var gid = this.history.length
     var merge = 0
+    var liberties = new Set()
     if (i > 0) {
-      var left = this.At(i - 1, j)
-      if (GoGame.SameColor(left, stone)) {
-        gid = left
-        merge++
+      var pp = this.c2idx(i - 1, j)
+      var left = this.board[pp]
+      if (!left) {
+        liberties.add(pp)
+      } else {
+        if (GoGame.SameColor(left, stone)) {
+          gid = left
+          merge++
+        } else {
+          // opposite group; let's remove this liberty
+          this.RemoveLiberty(left, p);
+        }
       }
     }
     if (i < this.n - 1) {
-      var right = this.At(i + 1, j)
-      // make sure we don't create an infinite loop by merging with oneself
-      if (right != gid && GoGame.SameColor(right, stone)) {
-        if (merge) {
-          gid = this.Merge(gid, right)
+      var pp = this.c2idx(i + 1, j)
+      var right = this.board[pp]
+      if (!right) {
+        liberties.add(pp)
+      } else {
+        if (!GoGame.SameColor(right, stone)) {
+          this.RemoveLiberty(right, p);
         } else {
-          gid = right
+          // make sure we don't create an infinite loop by merging with oneself
+          if (right != gid) {
+            if (merge) {
+              gid = this.Merge(gid, right)
+            } else {
+              gid = right
+            }
+            merge++
+          }
         }
-        merge++
       }
     }
     if (j > 0) {
-      var top = this.At(i, j - 1)
-      if (top != gid && GoGame.SameColor(top, stone)) {
-        if (merge) {
-          gid = this.Merge(gid, top)
+      var pp = this.c2idx(i, j - 1)
+      var top = this.board[pp]
+      if (!top) {
+        liberties.add(pp)
+      } else {
+        if (!GoGame.SameColor(top, stone)) {
+          this.RemoveLiberty(top, p);
         } else {
-          gid = top
+          if (top != gid) {
+            if (merge) {
+              gid = this.Merge(gid, top)
+            } else {
+              gid = top
+            }
+            merge++
+          }
         }
-        merge++
       }
     }
     if (j < this.n - 1) {
-      var bottom = this.At(i, j + 1)
-      if (bottom != gid && GoGame.SameColor(bottom, stone)) {
-        if (merge) {
-          gid = this.Merge(gid, bottom)
+      var pp = this.c2idx(i, j + 1)
+      var bottom = this.board[pp]
+      if (!bottom) {
+        liberties.add(pp)
+      } else {
+        if (!GoGame.SameColor(bottom, stone)) {
+          this.RemoveLiberty(bottom, p);
         } else {
-          gid = bottom
+          if (bottom != gid) {
+            if (merge) {
+              gid = this.Merge(gid, bottom)
+            } else {
+              gid = bottom
+            }
+            merge++
+          }
         }
-        merge++
       }
     }
-    console.log("Merged " + merge + " -> " + gid)
+    console.log("Merged " + merge + " -> " + gid + " liberties=" + liberties.size)
     if (!merge) {
       this.groups[gid] = [p]
+      this.liberties[gid] = liberties
     } else {
       this.groups[gid].push(p)
+      for (var v of liberties) {
+        this.liberties[gid].add(v)
+      }
+      this.RemoveLiberty(gid, p); // TODO: if this is suicide, it's illegal
       if (merge > 1) {
         // Mark this move as creating a merge (need refresh and special undo)
         this.history[this.history.length - 1].merged = true
@@ -127,7 +195,11 @@ class GoGame {
       this.board[p] = gid1
       this.groups[gid1].push(p)
     }
+    for (var v of this.liberties[gid2]) {
+      this.liberties[gid1].add(v)
+    }
     delete this.groups[gid2]
+    delete this.liberties[gid2]
     return gid1
   }
 
@@ -170,7 +242,7 @@ class GoGame {
     this.Reset();
     for (var i = 0; i < h.length; i++) {
       var pos = h[i]
-      this.Place(pos.x, pos.y, pos.color, false /* don't check oob, for resize */)
+      this.Place(pos.x, pos.y, pos.color, false /* don't check oob, for resize */ )
     }
   }
 }
@@ -330,7 +402,7 @@ class GoBan extends GoGame {
       var fontSz = Math.round(this.sz1 * .35 * 10) / 10
       ctx.font = "" + fontSz + "px Arial";
       if (this.withGroupNumbers) {
-        num = this.At(i, j)
+        num = "" + this.At(i, j) + "," + this.Liberties(i, j)
       }
       ctx.fillText("" + num, x, y + fontSz / 3);
     }
@@ -382,7 +454,7 @@ class GoBan extends GoGame {
     var j = this.coordToPos(y)
     var color = (this.history.length % 2 == 0) ? Stones.BLACK : Stones.WHITE;
     if (this.RecordMove(i, j, color)) {
-      if (this.LastMoveMergedGroups() && this.withGroupNumbers) {
+      if ( /*this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
         this.Redraw()
       }
       console.log("Valid move #" + this.history.length + " at " + i + " , " + j + " for " + this.Color(color))
