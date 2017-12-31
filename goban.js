@@ -20,10 +20,15 @@ class GoGame {
     this.board = new Array(this.n * this.n)
     this.groups = [];
     this.liberties = []; // matches the group
+    this.hascapture = false
   }
 
   c2idx(i, j) {
     return i * this.n + j
+  }
+
+  HasCapture() {
+    return this.hascapture
   }
 
   Liberties(i, j) {
@@ -36,6 +41,7 @@ class GoGame {
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
   Place(i, j, stone, checkoob = true) {
+    this.hascapture = false
     if (checkoob && this.OutOfBounds(i, j)) {
       return false
     }
@@ -66,12 +72,12 @@ class GoGame {
   }
 
   DeleteGroup(gid) {
+    this.hascapture = true
     var g = this.groups[gid]
     for (var i = 0; i < g.length; i++) {
       var p = g[i]
       this.board[p] = Stones.EMPTY
       // TODO: add liberties back to neighbors
-      // TODO: repaint
     }
   }
 
@@ -213,7 +219,7 @@ class GoGame {
   }
   // Is that position empty.
   Empty(i, j) {
-    return !At(i, j)
+    return !this.At(i, j)
   }
   At(i, j) {
     return this.board[this.c2idx(i, j)]
@@ -380,6 +386,10 @@ class GoBan extends GoGame {
       console.log("Skipping OOB " + i + " " + j)
       return
     }
+    if (this.Empty(i,j)) {
+      console.log("Skipping removed stone " + i + " " + j)
+      return
+    }
     var x = this.posToCoord(i);
     var y = this.posToCoord(j);
     var highlight = this.HighlightColor(color)
@@ -454,7 +464,7 @@ class GoBan extends GoGame {
     var j = this.coordToPos(y)
     var color = (this.history.length % 2 == 0) ? Stones.BLACK : Stones.WHITE;
     if (this.RecordMove(i, j, color)) {
-      if ( /*this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
+      if ( this.HasCapture() || /*this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
         this.Redraw()
       }
       console.log("Valid move #" + this.history.length + " at " + i + " , " + j + " for " + this.Color(color))
