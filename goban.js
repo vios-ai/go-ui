@@ -2,19 +2,79 @@
 // by scale pixels.
 // (c)2017 All Rights Reserved by Laurent Demailly
 
-var GoBanMaxSize = 19
+var Stones = {
+  EMPTY: 0, // evaluates to false
+  BLACK: 1,
+  WHITE: -1,
+};
 
-class GoBan {
+// Logic
+class GoGame {
+
+  constructor(size) {
+    this.n = size
+    this.history = [];
+    // This linear array will grow without crashing in case of resizes
+    // but will be incorrect. TODO: resize() or not let that feature preserve
+    // moves
+    this.board = new Array(size * size)
+    this.groups = [];
+  }
+
+  c2idx(i, j) {
+    return i * this.n + j
+  }
+
+  // Returns true if move is valid/placed, false otherwise.
+  // Always succeeds for Stones.EMPTY which clears the position.
+  Place(i, j, stone) {
+    if (this.OutOfBounds(i, j)) {
+      return false
+    }
+    var p = this.c2idx(i, j)
+    if (stone == Stones.EMPTY) {
+      this.board[p] = stone;
+      return true
+    }
+    if (this.board[p]) {
+      return false
+    }
+    this.board[p] = stone
+    this.history.push({
+      x: i,
+      y: j,
+      color: stone
+    })
+    return true
+  }
+
+  // Are the coordinates out of bound ?
+  OutOfBounds(i, j) {
+    return (i < 0 || j < 0 || i >= this.n || j >= this.n)
+  }
+  // Is that position empty.
+  Empty(i, j) {
+    return !this.board[this.c2idx(i, j)]
+  }
+
+  Undo() {
+    var l = this.history.length
+    if (l == 0) {
+      return false
+    }
+    l--
+    var pos = this.history[l]
+    this.history.length = l // truncate
+    this.Place(pos.x, pos.y, Stones.EMPTY)
+    return true
+  }
+}
+
+
+// UI / Drawing
+class GoBan extends GoGame {
   constructor(size = 19) {
-    this.n = size;
-    this.game = [];
-    if (size > GoBanMaxSize) {
-      GoBanMaxSize = size
-    }
-    this.board = new Array(GoBanMaxSize)
-    for (var i = 0; i < GoBanMaxSize; i++) {
-      this.board[i] = new Array(GoBanMaxSize)
-    }
+    super(size)
     this.withCoordinates = true
     this.withSounds = true
     this.withLastMoveHighlight = false
@@ -71,11 +131,11 @@ class GoBan {
   }
 
   AddHighlight() {
-    var l = this.game.length
+    var l = this.history.length
     if ((!this.withLastMoveHighlight) || (l == 0)) {
       return
     }
-    var lastMove = this.game[l - 1]
+    var lastMove = this.history[l - 1]
     if (this.OutOfBounds(lastMove.x, lastMove.y)) {
       return
     }
@@ -100,28 +160,37 @@ class GoBan {
   }
 
   RemoveHighlight() {
-    var l = this.game.length;
-    if ((!this.withLastMoveHighlight) || (l == 0)) {
+    // We remove highlight on the one before last
+    var l = this.history.length;
+    if ((!this.withLastMoveHighlight) || (l <= 1)) {
       return
     }
-    var lastMove = this.game[l - 1]
-    this.drawStone(lastMove.x, lastMove.y, lastMove.color, l)
+    var lastMove = this.history[l - 2]
+    this.drawStone(lastMove.x, lastMove.y, lastMove.color, l - 1)
   }
 
   RecordMove(x, y, color) {
+    if (!this.Place(x, y, color)) {
+      return false
+    }
     this.RemoveHighlight();
-    this.game.push({
-      x,
-      y,
-      color
-    });
-    this.board[x][y] = color;
-    this.drawStone(x, y, color, this.game.length, this.withLastMoveHighlight);
+    this.drawStone(x, y, color, this.history.length, this.withLastMoveHighlight);
     this.AddHighlight();
+    return true
+  }
+
+  Color(color) {
+    if (color == Stones.WHITE) {
+      return "white"
+    }
+    if (color == Stones.BLACK) {
+      return "black"
+    }
+    return color
   }
 
   HighlightColor(color) {
-    if (color == "white") {
+    if (color == "white" || color == Stones.WHITE) {
       return "black"
     } else {
       return "white"
@@ -139,7 +208,7 @@ class GoBan {
     var ctx = this.ctx
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.fillStyle = color;
+    ctx.fillStyle = this.Color(color);
     ctx.arc(x, y, this.stoneRadius, 0, 2 * Math.PI);
     ctx.fill();
     if (!skipHighlight) {
@@ -197,25 +266,14 @@ class GoBan {
     this.Redraw()
   }
 
-  OutOfBounds(i, j) {
-    return (i < 0 || j < 0 || i >= this.n || j >= this.n)
-  }
-
-  isValid(i, j) {
-    if (this.OutOfBounds(i, j)) {
-      return false
-    }
-    return !this.board[i][j]
-  }
-
   clickPosition(event) {
     var x = event.offsetX
     var y = event.offsetY
     var i = this.coordToPos(x)
     var j = this.coordToPos(y)
-    if (this.isValid(i, j)) {
-      console.log("Valid move " + i + " , " + j)
-      this.RecordMove(i, j, (this.game.length % 2 == 0) ? "black" : "white")
+    var color = (this.history.length % 2 == 0) ? Stones.BLACK : Stones.WHITE;
+    if (this.RecordMove(i, j, color)) {
+      console.log("Valid move #" + this.history.length + " at " + i + " , " + j + " for " + this.Color(color))
       if (this.withSounds) {
         audio.play();
       }
@@ -248,24 +306,18 @@ class GoBan {
     if (this.withCoordinates) {
       this.drawCoordinates()
     }
-    var len = this.game.length - 1
+    var len = this.history.length - 1
     for (var i = 0; i <= len; i++) {
       var skipHighlight = (i == len && this.withLastMoveHighlight) // for the last move
-      this.drawStone(this.game[i].x, this.game[i].y, this.game[i].color, i + 1, skipHighlight)
+      this.drawStone(this.history[i].x, this.history[i].y, this.history[i].color, i + 1, skipHighlight)
     }
     this.AddHighlight();
   }
 
   Undo() {
-    var l = this.game.length
-    if (l == 0) {
-      return
+    if (super.Undo()) {
+      this.Redraw()
     }
-    l--
-    var pos = this.game[l]
-    this.game.length = l // truncate
-    delete this.board[pos.x][pos.y]
-    this.Redraw()
   }
 
 }
