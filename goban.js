@@ -576,12 +576,6 @@ class GoBan extends GoGame {
     }
   }
 
-  Load(sgf) {
-    super.Load(sgf)
-    this.Redraw()
-    // TODO: deal with board size changes
-  }
-
   Resize(n) {
     if (this.n == n) {
       return // noop
