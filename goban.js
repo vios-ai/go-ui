@@ -259,6 +259,48 @@ class GoGame {
       this.Place(pos.x, pos.y, pos.color, false /* don't check oob, for resize */ )
     }
   }
+
+  // SGF format black/white move
+  static SgfMove(color, x,y) {
+    return ";" + ((color == Stones.WHITE) ? "W[" : "B[") + String.fromCharCode(97 + x, 97 + y) + "]\n"
+  }
+  // Parse back to our coords/colors
+  static SgfToPos(sgfColor, sgfCoord) {
+    var color = (sgfColor == "W" ? Stones.WHITE: Stones.BLACK)
+    var x = sgfCoord.charCodeAt(0)-97
+    var y = sgfCoord.charCodeAt(1)-97
+    return {x,y,color}
+  }
+
+  // Returns game history in basic SGF format
+  Save() {
+    var res = "(;FF[4]GM[1]SZ["+this.n+"]AP[vios.ai jsgo:0.1]\n"
+    for (var i = 0; i < this.history.length; i++) {
+      var pos = this.history[i]
+      res += GoGame.SgfMove(pos.color, pos.x, pos.y)
+    }
+    res += ")\n"
+    return res
+  }
+
+  // Parse a simple SGF and loads as history
+  Load(sgf) {
+    // Stop at the first variant/mainline:
+    sgf = sgf.substring(0, sgf.indexOf(")"));
+    var sz = /SZ\[([0-9]+)]/.exec(sgf)
+    var szN = parseInt(sz[1])
+    if (!szN) {
+      console.log("Invalid SGF, can't find SZ property")
+      return
+    }
+    this.n = szN
+    this.Reset()
+    var re = /;([BW])\[([a-z]+)]/g
+    for (var m; (m=re.exec(sgf)) ;) {
+      var pos = GoGame.SgfToPos(m[1],m[2])
+      this.Place(pos.x, pos.y, pos.color)
+    }
+  }
 }
 
 
@@ -420,7 +462,7 @@ class GoBan extends GoGame {
     if (!skipHighlight) {
       ctx.beginPath();
       ctx.strokeStyle = highlight;
-      ctx.arc(x, y, this.stoneRadius * .7, 0.15, Math.PI / 2 - .15);
+      ctx.arc(x, y, this.stoneRadius * .7, 0.2, Math.PI/2 - 0.2);
       ctx.stroke();
     }
     if (num && (this.withMoveNumbers || this.withGroupNumbers)) {
@@ -532,6 +574,12 @@ class GoBan extends GoGame {
     if (super.Undo()) {
       this.Redraw()
     }
+  }
+
+  Load(sgf) {
+    super.Load(sgf)
+    this.Redraw()
+    // TODO: deal with board size changes
   }
 
   Resize(n) {

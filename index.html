@@ -25,7 +25,7 @@
           Group#: <input type="checkbox" onchange="goban.withGroupNumbers=this.checked;goban.Redraw();" />,
           Sound: <input type="checkbox" onchange="goban.withSounds=this.checked;" checked />
         </td>
-        <td align="center">
+        <td>
           &nbsp;Size:
           <input type="radio" name="size" value="9" onchange="goban.Resize(9);resizeHandler();" checked> 9x9
           <input type="radio" name="size" value="13" onchange="goban.Resize(13);resizeHandler();"> 13x13
@@ -42,6 +42,15 @@
           <button type="submit" onmouseover="goban.withLastMoveHighlight=true; goban.Redraw();" onmouseout="goban.withLastMoveHighlight=false; goban.Redraw();" onclick="goban.Undo();">Undo last move</button>
         </td>
       </tr>
+      <tr>
+        <td>
+          <button type="submit" onclick="doLoad();">Load</button>:
+          <select id="saveList"></select>
+        </td>
+        <td>
+          <button type="submit" onclick="doSave();">Save</button>
+          <div style="display: inline-block;" id="saveInfo">...</div><br />
+        </td>
   </table>
   <script>
     var goban = new GoBan(9)
@@ -54,29 +63,42 @@
         min = window.innerHeight
       }
       console.log("Min Height/Width is " + min)
-      var scale = 2 * Math.floor(min * .95 / (size + 2) / 2)
+      var scale = 2 * Math.floor(min * .90 / (size + 2) / 2)
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
       //goban.drawStone(1,1, "orange", 399)
     }
+
     resizeHandler()
-/* infinite loop bug repro (fixed now) */
-/*
-    goban.RecordMove(6,6,1,);
-    goban.RecordMove(6,2,2,);
-    goban.RecordMove(2,6,1,);
-    goban.RecordMove(5,3,2,);
-    goban.RecordMove(5,5,1,);
-    goban.RecordMove(7,3,2,);
-    goban.RecordMove(4,5,1,);
-    goban.RecordMove(5,4,2,);
-    goban.RecordMove(3,6,1,);
-    goban.RecordMove(7,4,2,);
-    goban.RecordMove(4,7,1,);
-    goban.RecordMove(6,3,2,);
-    goban.RecordMove(5,6,1,);
-    goban.RecordMove(3,7,2,);
-*/
+
+    var selList = document.getElementById("saveList")
+    if (!localStorage.nSavedGames) {
+      localStorage.nSavedGames = 0
+    }
+    for (i = 1; i <= localStorage.nSavedGames; i++) {
+      var option = document.createElement("option");
+      option.text = "sgf-" + i
+      selList.add(option)
+    }
+    selList.selectedIndex = localStorage.nSavedGames - 1
+
+    function doSave(gameIdx = undefined) {
+      if (!gameIdx) {
+        gameIdx = ++localStorage.nSavedGames
+      }
+      var name = "sgf-" + gameIdx
+      localStorage.setItem(name, goban.Save())
+      var option = document.createElement("option");
+      option.text = name
+      selList.add(option)
+      selList.selectedIndex = localStorage.nSavedGames - 1
+      var info = document.getElementById("saveInfo")
+      info.innerText = "Saved " + name
+    }
+
+    function doLoad() {
+      goban.Load(localStorage.getItem(selList.value))
+    }
   </script>
 </body>
 
