@@ -346,17 +346,27 @@ class GoGame {
       console.log("Invalid 'false' SGF")
       return false
     }
+    if (!/\([\r\n\t ]*;[\r\n\t ]*FF\[/.exec(sgf)) {
+      console.log("Invalid SGF, can't find '(;FF[' file format header")
+      return false
+    }
     // Stop at the first variant/mainline:
     sgf = sgf.substring(0, sgf.indexOf(")"));
     var sz = /SZ\[([0-9]+)]/.exec(sgf)
-    var szN = parseInt(sz[1])
-    if (!szN) {
-      console.log("Invalid SGF, can't find SZ property")
+    var szN = -1
+    if (sz) {
+      szN = parseInt(sz[1])
+    } else {
+      console.log("SZ missing, defaulting to 19")
+      szN = 19 // be nice and default to 19 (some alphago sgf files lack SZ!)
+    }
+    if (szN < 2 || szN > 26) {
+      console.log("Invalid SGF, bad board size SZ " + szN)
       return false
     }
     this.n = szN
     this.Reset()
-    var re = /;[\r\n\t ]*([BW])\[([a-z]*)]/g
+    var re = /;[\r\n\t ]*([BW])\[([a-z]*)\]/g
     for (var m;
       (m = re.exec(sgf));) {
       var pos = this.SgfToPos(m[1], m[2])
@@ -397,17 +407,21 @@ class GoBan extends GoGame {
   // Draw all the hoshis
   drawHoshis() {
     var mid = (this.n - 1) / 2
-    this.hoshi(mid, mid)
+    if (this.n % 2 != 0) {
+      this.hoshi(mid, mid)
+    }
     var h = 3
     if (this.n < 13) {
       var h = 2
     }
     var g = this.n - h - 1;
-    this.hoshi(h, h)
-    this.hoshi(g, h)
-    this.hoshi(h, g)
-    this.hoshi(g, g)
-    if (this.n > 13) {
+    if (h < mid) {
+      this.hoshi(h, h)
+      this.hoshi(g, h)
+      this.hoshi(h, g)
+      this.hoshi(g, g)
+    }
+    if (this.n > 13 && this.n % 2 != 0) {
       this.hoshi(h, mid)
       this.hoshi(g, mid)
       this.hoshi(mid, h)
