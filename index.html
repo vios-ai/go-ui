@@ -48,7 +48,7 @@
           <select id="saveList"></select>
         </td>
         <td>
-          <button type="submit" onclick="doSave();">Save</button>
+          <button type="submit" onclick="doSave();">Save/Export</button>
           <div style="display: inline-block;" id="saveInfo">...</div><br />
         </td>
   </table>
@@ -93,7 +93,8 @@
       selList.add(option)
       selList.selectedIndex = localStorage.nSavedGames - 1
       var info = document.getElementById("saveInfo")
-      info.innerText = "Saved " + name
+      var uriContent = "data:application/sgf," + encodeURIComponent(goban.Save());
+      info.innerHTML = "Saved <a download='" + name + ".sgf' href='" + uriContent + "'>" + name + "</a>";
     }
 
     function doLoad() {
