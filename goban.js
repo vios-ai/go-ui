@@ -7,6 +7,7 @@ var Stones = {
   WHITE: 2,
 };
 
+var DEBUG = false
 
 // Logic
 class GoGame {
@@ -93,10 +94,28 @@ class GoGame {
       ((color == Stones.WHITE) ? "w " : "b ") + GoGame.PosToLetter(i) + (this.n - j)
   }
 
+  Pass(stone) {
+    if (stone == Stones.EMPTY) {
+      // this is just erasing a pass
+      return
+    }
+    this.history.push({
+      x: -1,
+      y: -1,
+      color: stone,
+      merged: false,
+      capture: false,
+    })
+  }
+
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
   Place(i, j, stone, checkoob = true) {
     this.hascapture = false
+    if (i == -1 && j == -1) {
+      this.Pass(stone)
+      return true
+    }
     if (checkoob && this.OutOfBounds(i, j)) {
       return false
     }
@@ -268,7 +287,7 @@ class GoGame {
       this.ReplayHistory()
     } else {
       // no multi merge so we just need to erase that stone
-      this.Place(pos.x, pos.y, Stones.EMPTY)
+      this.Place(pos.x, pos.y, Stones.EMPTY, false)
     }
     return true
   }
@@ -285,13 +304,24 @@ class GoGame {
 
   // SGF format black/white move
   static SgfMove(color, x, y) {
-    return ";" + ((color == Stones.WHITE) ? "W[" : "B[") + String.fromCharCode(97 + x, 97 + y) + "]\n"
+    var pos
+    if (x == -1 && y == -1) {
+      // pass
+      pos = ""; // or "tt" as used for 19x19 pass by many
+    } else {
+      pos = String.fromCharCode(97 + x, 97 + y)
+    }
+    return ";" + ((color == Stones.WHITE) ? "W[" : "B[") + pos + "]\n"
   }
+
   // Parse back to our coords/colors
-  static SgfToPos(sgfColor, sgfCoord) {
+  SgfToPos(sgfColor, sgfCoord) {
     var color = (sgfColor == "W" ? Stones.WHITE : Stones.BLACK)
     var x = sgfCoord.charCodeAt(0) - 97
     var y = sgfCoord.charCodeAt(1) - 97
+    if (sgfCoord == "" || (this.n <= 19 && sgfCoord == "tt")) {
+      x = y = -1; // it's a pass
+    }
     return {
       x,
       y,
@@ -326,10 +356,10 @@ class GoGame {
     }
     this.n = szN
     this.Reset()
-    var re = /;[\r\n\t ]*([BW])\[([a-z]+)]/g
+    var re = /;[\r\n\t ]*([BW])\[([a-z]*)]/g
     for (var m;
       (m = re.exec(sgf));) {
-      var pos = GoGame.SgfToPos(m[1], m[2])
+      var pos = this.SgfToPos(m[1], m[2])
       if (!this.Place(pos.x, pos.y, pos.color)) {
         console.log("Aborting load: unexpected illegal move at " +
           this.UserCoord(pos.x, pos.y, pos.color, 1) +
@@ -482,16 +512,24 @@ class GoBan extends GoGame {
 
   drawStone(i, j, color, num, skipHighlight = false) {
     if (this.OutOfBounds(i, j)) {
-      console.log("Skipping OOB " + i + " " + j)
+      if ((i == -1) && (j == -1)) {
+        if (DEBUG) {
+          console.log("Skipping pass move")
+        }
+      } else {
+        console.log("Skipping OOB " + i + " " + j)
+      }
       return
     }
     if (this.Empty(i, j)) {
-      console.log("Skipping removed stone " + i + " " + j)
+      if (DEBUG) {
+        console.log("Skipping removed stone " + i + " " + j)
+      }
       return
     }
     this.drawStoneNC(i, j, color, num, skipHighlight)
   }
-  
+
   // No Check draw
   drawStoneNC(i, j, color, num, skipHighlight) {
     var x = this.posToCoord(i);
