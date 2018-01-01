@@ -15,6 +15,16 @@
 
   <table align="center">
     <tr>
+      <td colspan=3 align="center">
+        <button type="submit" onclick="doLoad('sgf-autoSave');">Load Auto Save</button> or
+        <button type="submit" onclick="doLoad(selList.value);">Load</button>:
+        <select id="saveList"></select>
+        - or  -
+        <button type="submit" onclick="doSave();">Save/Export</button>
+        <div style="display: inline-block;" id="saveInfo">...</div><br />
+      </td>
+    </tr>
+    <tr>
       <td id="goban-container" style="width: 100%" colspan="3">
         <canvas id="goban"></canvas>
       </td>
@@ -42,16 +52,6 @@
           <button type="submit" onmouseover="goban.withLastMoveHighlight=true; goban.Redraw();" onmouseout="goban.withLastMoveHighlight=false; goban.Redraw();" onclick="goban.Undo();">Undo last move</button>
         </td>
       </tr>
-      <tr>
-        <td>
-          <button type="submit" onclick="doLoad('sgf-autoSave');">Load Auto Save</button> or
-          <button type="submit" onclick="doLoad(selList.value);">Load</button>:
-          <select id="saveList"></select>
-        </td>
-        <td>
-          <button type="submit" onclick="doSave();">Save/Export</button>
-          <div style="display: inline-block;" id="saveInfo">...</div><br />
-        </td>
   </table>
   <script>
     var goban = new GoBan(9)
