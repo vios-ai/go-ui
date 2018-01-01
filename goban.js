@@ -109,7 +109,7 @@ class GoGame {
       return false
     }
     if (stone != GoGame.ThisColor(this.history.length + 1)) {
-      console.log("Wrong color for the turn " + this.UserCoord(i, j, stone, 1));
+      console.log("Wrong color for the turn " + this.UserCoord(i, j, stone, 1) + " " + i + " " + j + " " + stone);
       return false
     }
     this.history.push({
@@ -446,13 +446,20 @@ class GoBan extends GoGame {
   }
 
   RecordMove(x, y, color) {
-    if (!this.Place(x, y, color)) {
+    if (!this.Place(x, y, this.BlackOrWhite(color))) {
       return false
     }
     this.RemoveHighlight();
     this.drawStone(x, y, color, this.history.length, this.withLastMoveHighlight);
     this.AddHighlight();
     return true
+  }
+
+  BlackOrWhite(color) {
+    if ((color == Stones.WHITE) || (color == "white")) {
+      return Stones.WHITE
+    }
+    return Stones.BLACK
   }
 
   Color(color) {
@@ -482,6 +489,11 @@ class GoBan extends GoGame {
       console.log("Skipping removed stone " + i + " " + j)
       return
     }
+    this.drawStoneNC(i, j, color, num, skipHighlight)
+  }
+  
+  // No Check draw
+  drawStoneNC(i, j, color, num, skipHighlight) {
     var x = this.posToCoord(i);
     var y = this.posToCoord(j);
     var highlight = this.HighlightColor(color)

@@ -39,14 +39,15 @@
     function test1(g) {
       g.RecordMove(3, 2, "black");
       g.RecordMove(2, 5, "white");
-      g.RecordMove(2, 4, "black");
       g.RecordMove(g.n - 1, g.n - 1, "red")
+      g.RecordMove(2, 4, "white");
       g.RecordMove(0, 0, "green")
-      g.drawStone(1,1, "purple", 399)
+      g.RecordMove(12, 12, "white");
+      g.drawStoneNC(1,1, "purple", 399, false)
     }
     test1(goban2)
     for (var i=0; i<361; i++) {
-      goban1.RecordMove(i%19,Math.floor(i/19), (i % 2 == 0) ? "black" : "white")
+      goban1.RecordMove(i%19,Math.floor(i/19), (i % 2 == 0) ? Stones.BLACK : Stones.WHITE)
     }
   </script>
 </body>
