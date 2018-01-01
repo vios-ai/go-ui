@@ -22,6 +22,7 @@ class GoGame {
     this.groups = [];
     this.liberties = []; // matches the group
     this.hascapture = false
+    this.captured = [0, 0, 0];
   }
 
   // x,y coordinates to flat array coordinates
@@ -126,6 +127,7 @@ class GoGame {
     this.hascapture = true
     var g = this.groups[gid]
     var otherColor = GoGame.OtherColor(gid)
+    this.captured[otherColor] += g.length
     for (var i = 0; i < g.length; i++) {
       var p = g[i]
       this.board[p] = Stones.EMPTY
@@ -262,6 +264,7 @@ class GoGame {
 
 // UI / Drawing
 // TODO: show liberties actual location on mouse over ? (and count somewhere else than on stones)
+// TODO: should has a GoGame not extend.
 class GoBan extends GoGame {
   constructor(size = 19) {
     super(size)
@@ -306,6 +309,14 @@ class GoBan extends GoGame {
       i++ // skip I
     }
     return String.fromCharCode(65 + i)
+  }
+
+  // TODO: use stones isn't of text for B/W labels
+  drawInfo() {
+    this.ctx.font = "" + this.sz1 * .2 + "px Arial";
+    this.ctx.fillStyle = "black";
+    this.ctx.fillText("B " + this.captured[Stones.BLACK] + ", W " + this.captured[Stones.WHITE],
+      this.posToCoord(-0.9), this.posToCoord(-.75));
   }
 
   drawCoordinates() {
@@ -507,7 +518,9 @@ class GoBan extends GoGame {
     if (this.withCoordinates) {
       this.drawCoordinates()
     }
+    this.drawInfo()
     var len = this.history.length - 1
+    // TODO: if history is longer than maybe 1/2 of the board, maybe faster to use the board instead of replaying from first move
     for (var i = 0; i <= len; i++) {
       var skipHighlight = (i == len && this.withLastMoveHighlight) // for the last move
       this.drawStone(this.history[i].x, this.history[i].y, this.history[i].color, i + 1, skipHighlight)
