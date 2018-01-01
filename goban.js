@@ -417,10 +417,10 @@ class GoBan extends GoGame {
 
   // TODO: use stones isn't of text for B/W labels
   drawInfo() {
-    this.ctx.font = "" + this.sz1 * .2 + "px Arial";
+    this.ctx.font = "" + this.sz1 * .33 + "px Arial";
     this.ctx.fillStyle = "black";
     this.ctx.fillText("B " + this.captured[Stones.BLACK] + ", W " + this.captured[Stones.WHITE],
-      this.posToCoord(-0.9), this.posToCoord(-.75));
+      this.posToCoord(-0.9), this.posToCoord(-.7));
   }
 
   drawCoordinates() {
