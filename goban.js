@@ -285,13 +285,17 @@ class GoGame {
 
   // Parse a simple SGF and loads as history
   Load(sgf) {
+    if (!sgf) {
+      console.log("Invalid 'false' SGF")
+      return false
+    }
     // Stop at the first variant/mainline:
     sgf = sgf.substring(0, sgf.indexOf(")"));
     var sz = /SZ\[([0-9]+)]/.exec(sgf)
     var szN = parseInt(sz[1])
     if (!szN) {
       console.log("Invalid SGF, can't find SZ property")
-      return
+      return false
     }
     this.n = szN
     this.Reset()
@@ -300,6 +304,7 @@ class GoGame {
       var pos = GoGame.SgfToPos(m[1],m[2])
       this.Place(pos.x, pos.y, pos.color)
     }
+    return true
   }
 }
 
@@ -315,6 +320,7 @@ class GoBan extends GoGame {
     this.withLastMoveHighlight = false
     this.withMoveNumbers = true
     this.withGroupNumbers = false
+    this.withAutoSave = true
   }
   // Draw 1 hoshi (star point) at x,y
   hoshi(x, y) {
@@ -530,6 +536,9 @@ class GoBan extends GoGame {
       console.log("Valid move #" + this.history.length + " at " + i + " , " + j + " for " + this.Color(color))
       if (this.withSounds) {
         audio.play();
+      }
+      if (this.withAutoSave) {
+        localStorage.setItem("sgf-autoSave", this.Save())
       }
     } else {
       console.log("Invalid move " + i + " , " + j)

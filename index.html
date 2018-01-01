@@ -44,7 +44,8 @@
       </tr>
       <tr>
         <td>
-          <button type="submit" onclick="doLoad();">Load</button>:
+          <button type="submit" onclick="doLoad('sgf-autoSave');">Load Auto Save</button> or
+          <button type="submit" onclick="doLoad(selList.value);">Load</button>:
           <select id="saveList"></select>
         </td>
         <td>
@@ -97,9 +98,10 @@
       info.innerHTML = "Saved <a download='" + name + ".sgf' href='" + uriContent + "'>" + name + "</a>";
     }
 
-    function doLoad() {
-      goban.Load(localStorage.getItem(selList.value))
-      resizeHandler()
+    function doLoad(name) {
+      if (goban.Load(localStorage.getItem(name))) {
+        resizeHandler()
+      }
     }
   </script>
 </body>
