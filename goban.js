@@ -79,6 +79,20 @@ class GoGame {
     return this.liberties[p].size
   }
 
+  static PosToLetter(i) {
+    if (i >= 8) {
+      i++ // skip I
+    }
+    return String.fromCharCode(65 + i)
+  }
+
+  // Extra when talking about next move or rolled back move, otherwise using
+  // last move # from history.
+  UserCoord(i, j, color, extra = 0) {
+    return "#" + (this.history.length + extra) + " " +
+      ((color == Stones.WHITE) ? "w " : "b ") + GoGame.PosToLetter(i) + (this.n - j)
+  }
+
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
   Place(i, j, stone, checkoob = true) {
@@ -94,6 +108,10 @@ class GoGame {
     if (this.board[p]) {
       return false
     }
+    if (stone != GoGame.ThisColor(this.history.length + 1)) {
+      console.log("Wrong color for the turn " + this.UserCoord(i, j, stone, 1));
+      return false
+    }
     this.history.push({
       x: i,
       y: j,
@@ -105,7 +123,7 @@ class GoGame {
     var suicide = this.RemoveLiberty(gid, p)
     this.history[this.history.length - 1].capture = this.hascapture
     if (suicide) {
-      console.log("Illegal suicide");
+      console.log("Illegal suicide at " + this.UserCoord(i, j, stone));
       this.Undo()
       return false
     }
@@ -159,6 +177,10 @@ class GoGame {
   Update(i, j, p, stone) {
     var gid = this.history.length
     var sameColor = GoGame.ThisColor(gid)
+    if (sameColor != stone) {
+      console.log(this.UserCoord(i, j, stone) + " unexpected at this turn! " + stone + " " + gid)
+      this.history
+    }
     var otherColor = GoGame.OtherColor(gid)
     // Place as new group first:
     var n = this.Neighbors(p)
@@ -174,7 +196,8 @@ class GoGame {
     for (var g of n.types[sameColor]) {
       gid = this.Merge(g, gid)
     }
-    console.log("Merged " + merge + " -> " + gid + " liberties=" + this.liberties[gid].size)
+    console.log(this.UserCoord(i, j, stone) +
+      " merge# " + merge + " -> gid " + gid + " liberties=" + this.liberties[gid].size)
     if (merge > 1) {
       // Mark this move as creating a merge (need refresh and special undo)
       this.history[this.history.length - 1].merged = true
@@ -261,20 +284,24 @@ class GoGame {
   }
 
   // SGF format black/white move
-  static SgfMove(color, x,y) {
+  static SgfMove(color, x, y) {
     return ";" + ((color == Stones.WHITE) ? "W[" : "B[") + String.fromCharCode(97 + x, 97 + y) + "]\n"
   }
   // Parse back to our coords/colors
   static SgfToPos(sgfColor, sgfCoord) {
-    var color = (sgfColor == "W" ? Stones.WHITE: Stones.BLACK)
-    var x = sgfCoord.charCodeAt(0)-97
-    var y = sgfCoord.charCodeAt(1)-97
-    return {x,y,color}
+    var color = (sgfColor == "W" ? Stones.WHITE : Stones.BLACK)
+    var x = sgfCoord.charCodeAt(0) - 97
+    var y = sgfCoord.charCodeAt(1) - 97
+    return {
+      x,
+      y,
+      color
+    }
   }
 
   // Returns game history in basic SGF format
   Save() {
-    var res = "(;FF[4]GM[1]SZ["+this.n+"]AP[vios.ai jsgo:0.1]\n"
+    var res = "(;FF[4]GM[1]SZ[" + this.n + "]AP[vios.ai jsgo:0.1]\n"
     for (var i = 0; i < this.history.length; i++) {
       var pos = this.history[i]
       res += GoGame.SgfMove(pos.color, pos.x, pos.y)
@@ -299,10 +326,16 @@ class GoGame {
     }
     this.n = szN
     this.Reset()
-    var re = /;([BW])\[([a-z]+)]/g
-    for (var m; (m=re.exec(sgf)) ;) {
-      var pos = GoGame.SgfToPos(m[1],m[2])
-      this.Place(pos.x, pos.y, pos.color)
+    var re = /;[\r\n\t ]*([BW])\[([a-z]+)]/g
+    for (var m;
+      (m = re.exec(sgf));) {
+      var pos = GoGame.SgfToPos(m[1], m[2])
+      if (!this.Place(pos.x, pos.y, pos.color)) {
+        console.log("Aborting load: unexpected illegal move at " +
+          this.UserCoord(pos.x, pos.y, pos.color, 1) +
+          " sgf: " + m[0])
+        return true
+      }
     }
     return true
   }
@@ -352,13 +385,6 @@ class GoBan extends GoGame {
     }
   }
 
-  posToLetter(i) {
-    if (i >= 8) {
-      i++ // skip I
-    }
-    return String.fromCharCode(65 + i)
-  }
-
   // TODO: use stones isn't of text for B/W labels
   drawInfo() {
     this.ctx.font = "" + this.sz1 * .2 + "px Arial";
@@ -374,7 +400,7 @@ class GoBan extends GoGame {
       var num = "" + (this.n - i)
       this.ctx.fillText(num, this.posToCoord(-1.51), this.posToCoord(i + .1))
       this.ctx.fillText(num, this.posToCoord(this.n + .08), this.posToCoord(i + .15))
-      var letter = this.posToLetter(i)
+      var letter = GoGame.PosToLetter(i)
       this.ctx.fillText(letter, this.posToCoord(i - 0.1), this.posToCoord(this.n + 0.35))
       this.ctx.fillText(letter, this.posToCoord(i - 0.1), this.sz1 / 3)
     }
@@ -468,7 +494,7 @@ class GoBan extends GoGame {
     if (!skipHighlight) {
       ctx.beginPath();
       ctx.strokeStyle = highlight;
-      ctx.arc(x, y, this.stoneRadius * .7, 0.2, Math.PI/2 - 0.2);
+      ctx.arc(x, y, this.stoneRadius * .7, 0.2, Math.PI / 2 - 0.2);
       ctx.stroke();
     }
     if (num && (this.withMoveNumbers || this.withGroupNumbers)) {

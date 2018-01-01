@@ -18,7 +18,8 @@
       <td colspan=3 align="center">
         <button type="submit" onclick="doLoad('sgf-autoSave');">Load Auto Save</button> or
         <button type="submit" onclick="doLoad(selList.value);">Load</button>:
-        <select id="saveList"></select>
+        <select id="saveList"></select> or
+        <input type="file" id="fileSel" onchange="doLoadFile(files[0]);" />
         - or  -
         <button type="submit" onclick="doSave();">Save/Export</button>
         <div style="display: inline-block;" id="saveInfo">...</div><br />
@@ -102,6 +103,18 @@
       if (goban.Load(localStorage.getItem(name))) {
         resizeHandler()
       }
+    }
+
+    function doLoadFile(f) {
+      console.log("doLoadFile called for " + f.name + " sz " + f.size)
+      var reader = new FileReader();
+      reader.onload = function(e) {
+	      var data = e.target.result;
+        if (goban.Load(data)) {
+          resizeHandler()
+        }
+      }
+      reader.readAsText(f);
     }
   </script>
 </body>
