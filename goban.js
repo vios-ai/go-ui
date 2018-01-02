@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.1'
+var VERSION = '0.1.2'
 
 // Logic
 class GoGame {
@@ -380,13 +380,12 @@ class GoGame {
   }
 }
 
-// UI / Drawing
-// TODO: show liberties actual location on mouse over ? (and count somewhere else than on stones)
-// TODO: should has a GoGame not extend.
+//  ----------- UI / Drawing ------------
+
 // TODO: how to fix "not used" standard lint
-class GoBan extends GoGame { // eslint-disable-line no-unused-vars
+class GoBan { // eslint-disable-line no-unused-vars
   constructor (size = 19) {
-    super(size)
+    this.g = new GoGame(size)
     this.withCoordinates = true
     this.withSounds = true
     this.withLastMoveHighlight = false
@@ -397,6 +396,11 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     this.cursorI = -1
     this.cursorJ = -1
   }
+  // forward to Game object
+  get n () {
+    return this.g.n
+  }
+
   // Draw 1 hoshi (star point) at x,y
   hoshi (x, y) {
     var ctx = this.ctx
@@ -435,7 +439,7 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
   drawInfo () {
     this.ctx.font = '' + this.sz1 * 0.33 + 'px Arial'
     this.ctx.fillStyle = 'black'
-    this.ctx.fillText('B ' + this.captured[Stones.BLACK] + ', W ' + this.captured[Stones.WHITE],
+    this.ctx.fillText('B ' + this.g.captured[Stones.BLACK] + ', W ' + this.g.captured[Stones.WHITE],
       this.posToCoord(-0.9), this.posToCoord(-0.7))
     this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
     this.ctx.textAlign = 'right'
@@ -464,11 +468,11 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
   }
 
   AddHighlight () {
-    var l = this.history.length
+    var l = this.g.history.length
     if ((!this.withLastMoveHighlight) || (l === 0)) {
       return
     }
-    var lastMove = this.history[l - 1]
+    var lastMove = this.g.history[l - 1]
     if (this.OutOfBounds(lastMove.x, lastMove.y)) {
       return
     }
@@ -496,20 +500,20 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
 
   RemoveHighlight () {
     // We remove highlight on the one before last
-    var l = this.history.length
+    var l = this.g.history.length
     if ((!this.withLastMoveHighlight) || (l <= 1)) {
       return
     }
-    var lastMove = this.history[l - 2]
+    var lastMove = this.g.history[l - 2]
     this.drawStone(lastMove.x, lastMove.y, lastMove.color, l - 1)
   }
 
   RecordMove (x, y, color) {
-    if (!this.Place(x, y, this.BlackOrWhite(color))) {
+    if (!this.g.Place(x, y, this.BlackOrWhite(color))) {
       return false
     }
     this.RemoveHighlight()
-    this.drawStone(x, y, color, this.history.length, this.withLastMoveHighlight)
+    this.drawStone(x, y, color, this.g.history.length, this.withLastMoveHighlight)
     this.AddHighlight()
     return true
   }
@@ -600,7 +604,7 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
   }
 
   drawLiberty (p) {
-    var [i, j] = this.idx2c(p)
+    var [i, j] = this.g.idx2c(p)
     var x = this.posToCoord(i)
     var y = this.posToCoord(j)
     var ctx = this.ctx
@@ -663,7 +667,7 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
   }
 
   drawMouse (x, y, forceRed = false) {
-    var n = this.history.length
+    var n = this.g.history.length
     var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE
     var highlight = GoGame.OtherColor(color)
     if (forceRed || this.OutOfBounds(this.cursorI, this.cursorJ) || !this.Empty(this.cursorI, this.cursorJ)) {
@@ -679,21 +683,22 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     var y = this.coordToPos(event.offsetY)
     this.cursorI = Math.round(x)
     this.cursorJ = Math.round(y)
-    var color = (this.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE
+    var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
       if (this.withMouseMove || this.HasCapture() || /* this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
         this.Redraw()
         this.drawMouse(x, y, true)
       }
-      console.log('Valid move #' + this.history.length + ' at ' + this.cursorI + ' , ' + this.cursorJ + ' for ' + color)
+      console.log('Valid move #' + this.g.history.length + ' at ' + this.cursorI + ' , ' + this.cursorJ + ' for ' + color)
       if (this.withSounds) {
         audio.play()
       }
       if (this.withAutoSave) {
-        window.localStorage.setItem('sgf-autoSave', this.Save())
+        window.localStorage.setItem('sgf-autoSave', this.g.Save())
       }
     } else {
       if (this.withMouseMove) {
+        this.Redraw()
         this.drawMouse(x, y, true)
       }
       console.log('Invalid move ' + this.cursorI + ' , ' + this.cursorJ)
@@ -728,7 +733,7 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
       this.drawCoordinates()
     }
     this.drawInfo()
-    var len = this.history.length - 1
+    var len = this.g.history.length - 1
     // TODO: if history is longer than maybe 1/2 of the board, maybe faster to use the board instead of replaying from first move
     var underCursor
     if (this.withGroupNumbers && !this.OutOfBounds(this.cursorI, this.cursorJ)) {
@@ -737,11 +742,11 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
 
     for (i = 0; i <= len; i++) {
       var skipHighlight = (i === len && this.withLastMoveHighlight && !underCursor) // for the last move
-      this.drawStone(this.history[i].x, this.history[i].y, this.history[i].color, i + 1, skipHighlight)
+      this.drawStone(this.g.history[i].x, this.g.history[i].y, this.g.history[i].color, i + 1, skipHighlight)
     }
     if (underCursor) {
       i = 0
-      for (var l of this.Liberties(this.cursorI, this.cursorJ)) {
+      for (var l of this.g.Liberties(this.cursorI, this.cursorJ)) {
         this.drawLiberty(l)
         i++
       }
@@ -751,8 +756,10 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     }
   }
 
+  // Forwards to Game object:
+
   Undo () {
-    if (super.Undo()) {
+    if (this.g.Undo()) {
       this.Redraw()
     }
   }
@@ -761,8 +768,24 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     if (this.n === n) {
       return // noop
     }
-    this.n = n
-    this.ReplayHistory()
+    this.g.n = n
+    this.g.ReplayHistory()
+  }
+
+  OutOfBounds (i, j) {
+    return this.g.OutOfBounds(i, j)
+  }
+  Empty (i, j) {
+    return this.g.Empty(i, j)
+  }
+  At (i, j) {
+    return this.g.At(i, j)
+  }
+  Load (sgf) {
+    return this.g.Load(sgf)
+  }
+  Save () {
+    return this.g.Save()
   }
 }
 
