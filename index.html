@@ -116,6 +116,16 @@
       }
       reader.readAsText(f);
     }
+    function doLoadURL(url) {
+      console.log('Attempting to load url', url)
+      fetch(url).then(doc => doc.blob()).then((blob) => {
+        doLoadFile(blob)
+      }).catch(err => { throw err })
+    }
+    var qs = window.location.search
+    if (qs.startsWith("?url=")) {
+      doLoadURL(qs.substr(5))
+    }
   </script>
 </body>
 

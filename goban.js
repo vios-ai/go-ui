@@ -346,7 +346,7 @@ class GoGame {
       return false
     }
     if (!/\([\r\n\t ]*;[\r\n\t ]*FF\[/.exec(sgf)) {
-      console.log("Invalid SGF, can't find '(;FF[' file format header")
+      console.log("Invalid SGF, can't find '(;FF[' file format header", sgf)
       return false
     }
     // Stop at the first variant/mainline:
