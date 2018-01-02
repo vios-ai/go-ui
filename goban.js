@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.0'
+var VERSION = '0.1.1'
 
 // Logic
 class GoGame {
@@ -589,7 +589,7 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
       var fontSz = Math.round(this.sz1 * 0.35 * 10) / 10
       ctx.font = '' + fontSz + 'px Arial'
       if (this.withGroupNumbers) {
-        num = 'g' + this.At(i, j)
+        num = '' + this.At(i, j)
       }
       ctx.fillText('' + num, x, y + fontSz / 3)
     }
