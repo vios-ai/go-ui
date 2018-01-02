@@ -8,6 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
+var VERSION = '0.1.0'
 
 // Logic
 class GoGame {
@@ -436,6 +437,17 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     this.ctx.fillStyle = 'black'
     this.ctx.fillText('B ' + this.captured[Stones.BLACK] + ', W ' + this.captured[Stones.WHITE],
       this.posToCoord(-0.9), this.posToCoord(-0.7))
+    this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
+    this.ctx.textAlign = 'right'
+    this.ctx.fillText('vios.ai ' + VERSION, this.posToCoord(this.n - 0.1), this.posToCoord(this.n - 0.1))
+  }
+  drawLibertyCount (color, n) {
+    this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
+    this.ctx.fillStyle = 'purple'
+    this.ctx.textAlign = 'left'
+    this.ctx.fillText(((color === Stones.WHITE) ? 'White' : 'Black') + ': ' + n +
+      ' libert' + ((n > 1) ? 'ies.' : 'y. atari!'),
+      this.posToCoord(-0.9), this.posToCoord(this.n - 0.1))
   }
 
   drawCoordinates () {
@@ -718,7 +730,6 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     this.drawInfo()
     var len = this.history.length - 1
     // TODO: if history is longer than maybe 1/2 of the board, maybe faster to use the board instead of replaying from first move
-
     var underCursor
     if (this.withGroupNumbers && !this.OutOfBounds(this.cursorI, this.cursorJ)) {
       underCursor = this.At(this.cursorI, this.cursorJ)
@@ -729,9 +740,12 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
       this.drawStone(this.history[i].x, this.history[i].y, this.history[i].color, i + 1, skipHighlight)
     }
     if (underCursor) {
+      i = 0
       for (var l of this.Liberties(this.cursorI, this.cursorJ)) {
         this.drawLiberty(l)
+        i++
       }
+      this.drawLibertyCount(GoGame.ThisColor(underCursor), i)
     } else {
       this.AddHighlight()
     }
