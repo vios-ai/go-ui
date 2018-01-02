@@ -389,8 +389,8 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.withCoordinates = true
     this.withSounds = true
     this.withLastMoveHighlight = false
-    this.withMoveNumbers = true
-    this.withGroupNumbers = false
+    this.withMoveNumbers = false
+    this.withGroupNumbers = true
     this.withAutoSave = true
     this.withMouseMove = true
     this.cursorI = -1
