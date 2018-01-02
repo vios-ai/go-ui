@@ -459,14 +459,16 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
       return
     }
     var highlight = this.HighlightColor(lastMove.color)
+    this.drawHighlight(highlight, lastMove.x, lastMove.y)
+  }
+
+  drawHighlight (color, i, j, width = 2, rs = this.stoneRadius * 0.6, len = rs / 3) {
     var ctx = this.ctx
     ctx.beginPath()
-    ctx.strokeStyle = highlight
-    ctx.lineWidth = 2
-    var rs = this.stoneRadius * 0.6
-    var len = rs / 3
-    var x = this.posToCoord(lastMove.x)
-    var y = this.posToCoord(lastMove.y)
+    ctx.strokeStyle = color
+    ctx.lineWidth = width
+    var x = this.posToCoord(i)
+    var y = this.posToCoord(j)
     ctx.moveTo(x - rs, y - rs)
     ctx.lineTo(x - rs + len, y - rs + len)
     ctx.moveTo(x + rs, y + rs)
@@ -582,12 +584,8 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
     return 0.5 + this.delta + x * this.sz1
   }
   // inverse of above
-  coordToPos (x, continous = false) {
-    var r = (x - 0.5 - this.delta) / this.sz1
-    if (continous) {
-      return r
-    }
-    return Math.round(r)
+  coordToPos (x) {
+    return (x - 0.5 - this.delta) / this.sz1
   }
 
   // Draw the main board on the given canvas
@@ -620,27 +618,37 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
 
   mouseMove (event) {
     if (this.withMouseMove) {
-      var x = event.offsetX
-      var y = event.offsetY
-      var i = this.coordToPos(x, true)
-      var j = this.coordToPos(y, true)
-      var n = this.history.length
-      var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE
-      var highlight = GoGame.OtherColor(color)
+      var x = this.coordToPos(event.offsetX)
+      var y = this.coordToPos(event.offsetY)
       this.Redraw()
-      this.drawStoneNC(i, j, this.Color(color, 0.5), 0, false, this.Color(highlight, 0.7))
+      this.drawMouse(x, y)
+    }
+  }
+
+  drawMouse (x, y, forceRed = false) {
+    var i = Math.round(x)
+    var j = Math.round(y)
+    var n = this.history.length
+    var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE
+    var highlight = GoGame.OtherColor(color)
+    if (forceRed || this.OutOfBounds(i, j) || !this.Empty(i, j)) {
+      this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
+      this.drawHighlight(this.Color(color), x, y, 3, 5, 3)
+    } else {
+      this.drawStoneNC(x, y, this.Color(color, 0.5), 0, false, this.Color(highlight, 0.7))
     }
   }
 
   clickPosition (event) {
-    var x = event.offsetX
-    var y = event.offsetY
-    var i = this.coordToPos(x)
-    var j = this.coordToPos(y)
+    var x = this.coordToPos(event.offsetX)
+    var y = this.coordToPos(event.offsetY)
+    var i = Math.round(x)
+    var j = Math.round(y)
     var color = (this.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE
     if (this.RecordMove(i, j, color)) {
       if (this.withMouseMove || this.HasCapture() || /* this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
         this.Redraw()
+        this.drawMouse(x, y, true)
       }
       console.log('Valid move #' + this.history.length + ' at ' + i + ' , ' + j + ' for ' + this.Color(color))
       if (this.withSounds) {
@@ -650,6 +658,9 @@ class GoBan extends GoGame { // eslint-disable-line no-unused-vars
         window.localStorage.setItem('sgf-autoSave', this.Save())
       }
     } else {
+      if (this.withMouseMove) {
+        this.drawMouse(x, y, true)
+      }
       console.log('Invalid move ' + i + ' , ' + j)
     }
   }
