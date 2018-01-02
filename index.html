@@ -124,7 +124,7 @@
     }
     var qs = window.location.search
     if (qs.startsWith("?url=")) {
-      doLoadURL(qs.substr(5))
+      doLoadURL(decodeURIComponent(qs.substr(5)))
     }
   </script>
 </body>
