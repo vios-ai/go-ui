@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.2'
+var VERSION = '0.1.3-pre1'
 
 // Logic
 class GoGame {
@@ -24,6 +24,7 @@ class GoGame {
     this.liberties = [] // matches the group
     this.hascapture = false
     this.captured = [0, 0, 0]
+    this.nextMove = Stones.BLACK
   }
 
   // x,y coordinates to flat array coordinates
@@ -94,6 +95,14 @@ class GoGame {
       ((color === Stones.WHITE) ? 'w ' : 'b ') + GoGame.PosToLetter(i) + (this.n - j)
   }
 
+  NextMove () {
+    return this.nextMove++
+  }
+
+  static IsPass (i, j) {
+    return (i === -1) && (j === -1)
+  }
+
   Pass (stone) {
     if (stone === Stones.EMPTY) {
       // this is just erasing a pass
@@ -103,16 +112,31 @@ class GoGame {
       x: -1,
       y: -1,
       color: stone,
-      merged: false,
-      capture: false
+      move: this.NextMove(),
+      prev: null
+    })
+  }
+
+  // Place puts/erases stone irrespective of rules,
+  // and records that in the history.
+  Place (i, j, stone, move) {
+    var p = this.c2idx(i, j)
+    var prev = this.board[p]
+    this.board[p] = stone
+    this.history.push({
+      x: i,
+      y: j,
+      color: stone,
+      move: move,
+      undo: prev
     })
   }
 
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
-  Place (i, j, stone, checkoob = true) {
+  Play (i, j, stone, checkoob = true) {
     this.hascapture = false
-    if (i === -1 && j === -1) {
+    if (GoGame.IsPass(i, j)) {
       this.Pass(stone)
       return true
     }
@@ -127,20 +151,24 @@ class GoGame {
     if (this.board[p]) {
       return false
     }
-    if (stone !== GoGame.ThisColor(this.history.length + 1)) {
+    var move = this.NextMove()
+    if (stone !== GoGame.ThisColor(move)) {
       console.log('Wrong color for the turn ' + this.UserCoord(i, j, stone, 1) + ' ' + i + ' ' + j + ' ' + stone)
+      this.nextMove--
       return false
     }
     this.history.push({
       x: i,
       y: j,
       color: stone,
-      merged: false,
-      capture: false
+      move: move,
+      undo: Stones.EMPTY
     })
-    var gid = this.Update(i, j, p, stone)
+    var gid = this.Update(i, j, p, stone, move)
     var suicide = this.RemoveLiberty(gid, p)
-    this.history[this.history.length - 1].capture = this.hascapture
+    if (this.HasCapture()) {
+      this.history[this.history.length - 1].undo = -1 // capture not simple undo
+    }
     if (suicide) {
       console.log('Illegal suicide at ' + this.UserCoord(i, j, stone))
       this.Undo()
@@ -177,24 +205,16 @@ class GoGame {
     delete this.liberties[gid]
   }
 
-  LastMoveMergedGroups () {
+  // Last move requires a redraw (gid change or capture)
+  LastMoveIsComplex () {
     var l = this.history.length - 1
     if (l < 0) {
       return false
     }
-    return this.history[l].merged
+    return (this.history[l].undo !== -1)
   }
 
-  LastMoveHadCapture () {
-    var l = this.history.length - 1
-    if (l < 0) {
-      return false
-    }
-    return this.history[l].capture
-  }
-
-  Update (i, j, p, stone) {
-    var gid = this.history.length
+  Update (i, j, p, stone, gid) {
     var sameColor = GoGame.ThisColor(gid)
     if (sameColor !== stone) {
       console.log(this.UserCoord(i, j, stone) + ' unexpected at this turn! ' + stone + ' ' + gid)
@@ -218,7 +238,7 @@ class GoGame {
       ' merge# ' + merge + ' -> gid ' + gid + ' liberties=' + this.liberties[gid].size)
     if (merge > 1) {
       // Mark this move as creating a merge (need refresh and special undo)
-      this.history[this.history.length - 1].merged = true
+      this.history[this.history.length - 1].undo = -1
     }
     return gid
   }
@@ -281,12 +301,15 @@ class GoGame {
     l--
     var pos = this.history[l]
     this.history.length = l // truncate
-    if (pos.merged || pos.capture) {
+    this.nextMove--
+    if (pos.undo === -1) {
       // there was a multi merge or capture... let's replay everything brute force
       this.ReplayHistory()
     } else {
-      // no multi merge so we just need to erase that stone
-      this.Place(pos.x, pos.y, Stones.EMPTY, false)
+      // no multi merge so we just need to erase that stone or put back a stone
+      if (!GoGame.IsPass(pos.x, pos.y)) {
+        this.board[this.c2idx(pos.x, pos.y)] = pos.undo
+      }
     }
     return true
   }
@@ -297,14 +320,18 @@ class GoGame {
     this.Reset()
     for (var i = 0; i < h.length; i++) {
       var pos = h[i]
-      this.Place(pos.x, pos.y, pos.color, false /* don't check oob, for resize */)
+      if (pos.move) {
+        this.Play(pos.x, pos.y, pos.color, /* checkoob */ false)
+      } else {
+        this.Place(pos.x, pos.y, pos.color, 0)
+      }
     }
   }
 
   // SGF format black/white move
   static SgfMove (color, x, y) {
     var pos
-    if (x === -1 && y === -1) {
+    if (GoGame.IsPass(x, y)) {
       // pass
       pos = '' // or "tt" as used for 19x19 pass by many
     } else {
@@ -369,7 +396,7 @@ class GoGame {
     for (var m;
       (m = re.exec(sgf));) {
       var pos = this.SgfToPos(m[1], m[2])
-      if (!this.Place(pos.x, pos.y, pos.color)) {
+      if (!this.Play(pos.x, pos.y, pos.color)) {
         console.log('Aborting load: unexpected illegal move at ' +
           this.UserCoord(pos.x, pos.y, pos.color, 1) +
           ' sgf: ' + m[0])
@@ -439,8 +466,9 @@ class GoBan { // eslint-disable-line no-unused-vars
   drawInfo () {
     this.ctx.font = '' + this.sz1 * 0.33 + 'px Arial'
     this.ctx.fillStyle = 'black'
+    this.ctx.textAlign = 'right'
     this.ctx.fillText('B ' + this.g.captured[Stones.BLACK] + ', W ' + this.g.captured[Stones.WHITE],
-      this.posToCoord(-0.9), this.posToCoord(-0.7))
+      this.posToCoord(this.n - 0.1), this.posToCoord(-0.7))
     this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
     this.ctx.textAlign = 'right'
     this.ctx.fillText('vios.ai ' + VERSION, this.posToCoord(this.n - 0.1), this.posToCoord(this.n - 0.1))
@@ -509,7 +537,7 @@ class GoBan { // eslint-disable-line no-unused-vars
   }
 
   RecordMove (x, y, color) {
-    if (!this.g.Place(x, y, this.BlackOrWhite(color))) {
+    if (!this.g.Play(x, y, this.BlackOrWhite(color))) {
       return false
     }
     this.RemoveHighlight()
@@ -545,7 +573,7 @@ class GoBan { // eslint-disable-line no-unused-vars
 
   drawStone (i, j, color, num, skipHighlight = false) {
     if (this.OutOfBounds(i, j)) {
-      if ((i === -1) && (j === -1)) {
+      if (GoGame.IsPass(i, j)) {
         if (DEBUG) {
           console.log('Skipping pass move')
         }
@@ -666,10 +694,24 @@ class GoBan { // eslint-disable-line no-unused-vars
     }
   }
 
+  drawText (x, y, color1, color2, txt) {
+    this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
+    this.ctx.fillStyle = color1
+    this.ctx.strokeStyle = color2
+    this.ctx.textAlign = 'center'
+    this.ctx.lineWidth = 3
+    this.ctx.strokeText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
+    this.ctx.fillText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
+  }
+
   drawMouse (x, y, forceRed = false) {
     var n = this.g.history.length
-    var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE
+    var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fixme
     var highlight = GoGame.OtherColor(color)
+    if (GoGame.IsPass(this.cursorI, this.cursorJ)) {
+      this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
+      return
+    }
     if (forceRed || this.OutOfBounds(this.cursorI, this.cursorJ) || !this.Empty(this.cursorI, this.cursorJ)) {
       this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
       this.drawHighlight(this.Color(color), x, y, 3, 5, 3)
@@ -685,7 +727,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.cursorJ = Math.round(y)
     var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
-      if (this.withMouseMove || this.HasCapture() || /* this.LastMoveMergedGroups() && */ this.withGroupNumbers) {
+      if (this.withMouseMove || this.g.LastMoveIsComplex() || this.withGroupNumbers) {
         this.Redraw()
         this.drawMouse(x, y, true)
       }
