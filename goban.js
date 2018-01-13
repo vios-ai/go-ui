@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.2'
+var VERSION = '0.1.3-pre1'
 
 // Logic
 class GoGame {
@@ -466,8 +466,9 @@ class GoBan { // eslint-disable-line no-unused-vars
   drawInfo () {
     this.ctx.font = '' + this.sz1 * 0.33 + 'px Arial'
     this.ctx.fillStyle = 'black'
+    this.ctx.textAlign = 'right'
     this.ctx.fillText('B ' + this.g.captured[Stones.BLACK] + ', W ' + this.g.captured[Stones.WHITE],
-      this.posToCoord(-0.9), this.posToCoord(-0.7))
+      this.posToCoord(this.n - 0.1), this.posToCoord(-0.7))
     this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
     this.ctx.textAlign = 'right'
     this.ctx.fillText('vios.ai ' + VERSION, this.posToCoord(this.n - 0.1), this.posToCoord(this.n - 0.1))
@@ -693,10 +694,24 @@ class GoBan { // eslint-disable-line no-unused-vars
     }
   }
 
+  drawText (x, y, color1, color2, txt) {
+    this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
+    this.ctx.fillStyle = color1
+    this.ctx.strokeStyle = color2
+    this.ctx.textAlign = 'center'
+    this.ctx.lineWidth = 3
+    this.ctx.strokeText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
+    this.ctx.fillText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
+  }
+
   drawMouse (x, y, forceRed = false) {
     var n = this.g.history.length
-    var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE
+    var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fixme
     var highlight = GoGame.OtherColor(color)
+    if (GoGame.IsPass(this.cursorI, this.cursorJ)) {
+      this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
+      return
+    }
     if (forceRed || this.OutOfBounds(this.cursorI, this.cursorJ) || !this.Empty(this.cursorI, this.cursorJ)) {
       this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
       this.drawHighlight(this.Color(color), x, y, 3, 5, 3)
