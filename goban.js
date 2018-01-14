@@ -665,7 +665,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     var y = this.posToCoord(j)
     var ctx = this.ctx
     ctx.lineWidth = this.stoneRadius / 5
-    ctx.strokeStyle = 'purple'
+    ctx.strokeStyle = 'rgba(128, 0, 128, 0.75)' // purple + alpha
     ctx.beginPath()
     ctx.arc(x, y, this.stoneRadius / 4, 0, 2 * Math.PI)
     ctx.stroke()
@@ -763,9 +763,10 @@ class GoBan { // eslint-disable-line no-unused-vars
     var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fix me
     var coord = this.g.UserCoord(this.cursorI, this.cursorJ)
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
+      this.underCursor = this.At(this.cursorI, this.cursorJ)
       if (this.withMouseMove || this.g.LastMoveIsComplex() || this.withGroupNumbers) {
         this.Redraw()
-        this.drawMouse(x, y, true)
+        // this.drawMouse(x, y, true)
       }
       console.log('Valid move #' + this.g.history.length + ' at ' + coord + ' for ' + color)
       if (this.withSounds) {
