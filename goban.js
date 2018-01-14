@@ -91,9 +91,12 @@ class GoGame {
 
   // Extra when talking about next move or rolled back move, otherwise using
   // last move # from history.
-  UserCoord (i, j, color, extra = 0) {
-    return '#' + (this.history.length + extra) + ' ' +
-      ((color === Stones.WHITE) ? 'w ' : 'b ') + GoGame.PosToLetter(i) + (this.n - j)
+  UserCoordLong (i, j, color, extra = 0) {
+    return '#' + (this.history.length + extra) + ' ' + ((color === Stones.WHITE) ? 'w ' : 'b ') + this.UserCoord(i, j)
+  }
+
+  UserCoord (i, j) {
+    return GoGame.PosToLetter(i) + (this.n - j)
   }
 
   NextMove () {
@@ -143,7 +146,7 @@ class GoGame {
     }
     /*
     if (move && (stone !== GoGame.ThisColor(move))) {
-      console.log('Wrong color for the turn ' + this.UserCoord(i, j, stone, 1) + ' ' + i + ' ' + j + ' ' + stone)
+      console.log('Wrong color for the turn ' + this.UserCoordLong(i, j, stone, 1) + ' ' + i + ' ' + j + ' ' + stone)
       this.nextMove--
       return false
     }
@@ -161,7 +164,7 @@ class GoGame {
       this.history[this.history.length - 1].undo = -1 // capture not simple undo
     }
     if (suicide) {
-      console.log('Illegal suicide at ' + this.UserCoord(i, j, stone))
+      console.log('Illegal suicide at ' + this.UserCoordLong(i, j, stone))
       this.Undo()
       return false
     }
@@ -234,7 +237,7 @@ class GoGame {
     for (g of n.types[stone]) {
       gid = this.Merge(g, gid)
     }
-    console.log(this.UserCoord(i, j, stone) +
+    console.log(this.UserCoordLong(i, j, stone) +
       ' merge# ' + merge + ' -> gid ' + gid + ' liberties=' + this.liberties[gid].size)
     if (merge > 1) {
       // Mark this move as creating a merge (need refresh and special undo)
@@ -418,7 +421,7 @@ class GoGame {
         var pos = positions.moves[i]
         if (!this.Move(pos.x, pos.y, pos.color, positions.play ? this.NextMove() : 0)) {
           console.log('Aborting load: unexpected illegal move at ' +
-              this.UserCoord(pos.x, pos.y, pos.color, 1) + ' sgf: ' + m[0])
+              this.UserCoordLong(pos.x, pos.y, pos.color, 1) + ' sgf: ' + m[0])
           return true
         }
       }
@@ -493,13 +496,17 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.ctx.textAlign = 'right'
     this.ctx.fillText('vios.ai ' + VERSION, this.posToCoord(this.n - 0.1), this.posToCoord(this.n - 0.1))
   }
+
   drawLibertyCount (color, n) {
+    this.drawTransientText(((color === Stones.WHITE) ? 'White' : 'Black') + ': ' + n +
+      ' libert' + ((n > 1) ? 'ies.' : 'y. atari!'))
+  }
+
+  drawTransientText (txt) {
     this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
     this.ctx.fillStyle = 'purple'
     this.ctx.textAlign = 'left'
-    this.ctx.fillText(((color === Stones.WHITE) ? 'White' : 'Black') + ': ' + n +
-      ' libert' + ((n > 1) ? 'ies.' : 'y. atari!'),
-      this.posToCoord(-0.9), this.posToCoord(this.n - 0.1))
+    this.ctx.fillText(txt, this.posToCoord(-0.9), this.posToCoord(this.n - 0.1))
   }
 
   drawCoordinates () {
@@ -734,7 +741,7 @@ class GoBan { // eslint-disable-line no-unused-vars
       this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
       return
     }
-    if (forceRed || this.OutOfBounds(this.cursorI, this.cursorJ) || !this.Empty(this.cursorI, this.cursorJ)) {
+    if (forceRed || this.OutOfBounds(this.cursorI, this.cursorJ) || !this.Empty()) {
       this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
       this.drawHighlight(this.Color(color), x, y, 3, 5, 3)
     } else {
@@ -747,13 +754,14 @@ class GoBan { // eslint-disable-line no-unused-vars
     var y = this.coordToPos(event.offsetY)
     this.cursorI = Math.round(x)
     this.cursorJ = Math.round(y)
-    var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE
+    var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fix me
+    var coord = this.g.UserCoord(this.cursorI, this.cursorJ)
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
       if (this.withMouseMove || this.g.LastMoveIsComplex() || this.withGroupNumbers) {
         this.Redraw()
         this.drawMouse(x, y, true)
       }
-      console.log('Valid move #' + this.g.history.length + ' at ' + this.cursorI + ' , ' + this.cursorJ + ' for ' + color)
+      console.log('Valid move #' + this.g.history.length + ' at ' + coord + ' for ' + color)
       if (this.withSounds) {
         audio.play()
       }
@@ -765,7 +773,10 @@ class GoBan { // eslint-disable-line no-unused-vars
         this.Redraw()
         this.drawMouse(x, y, true)
       }
-      console.log('Invalid move ' + this.cursorI + ' , ' + this.cursorJ)
+      if (!this.withGroupNumbers || this.Empty()) {
+        this.drawTransientText('Invalid move ' + coord)
+      }
+      console.log('Invalid move ' + coord)
     }
   }
 
@@ -840,7 +851,7 @@ class GoBan { // eslint-disable-line no-unused-vars
   OutOfBounds (i, j) {
     return this.g.OutOfBounds(i, j)
   }
-  Empty (i, j) {
+  Empty (i = this.cursorI, j = this.cursorJ) {
     return this.g.Empty(i, j)
   }
   At (i, j) {
