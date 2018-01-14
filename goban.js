@@ -695,8 +695,7 @@ class GoBan { // eslint-disable-line no-unused-vars
       })
       c.addEventListener('mouseleave', function (event) {
         self.withLastMoveHighlight = false
-        this.underCursor = Stones.EMPTY
-        this.updateCursor(-1, -1)
+        self.updateCursor(-1, -1)
         self.Redraw()
       })
       c.addEventListener('mouseenter', function (event) {
