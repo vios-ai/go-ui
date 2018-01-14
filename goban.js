@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.3-pre1'
+var VERSION = '0.1.3'
 
 // Logic
 class GoGame {
