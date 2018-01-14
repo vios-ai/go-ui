@@ -340,18 +340,33 @@ class GoGame {
     return ';' + ((color === Stones.WHITE) ? 'W[' : 'B[') + pos + ']\n'
   }
 
+  SgfToCoord (color, sgfCoord) {
+    var n = this.n
+    return sgfCoord.split('[').map(function (val) {
+      var x = val.charCodeAt(0) - 97
+      var y = val.charCodeAt(1) - 97
+      if (sgfCoord === ']' || (n <= 19 && sgfCoord === 'tt]')) {
+        x = y = -1 // it's a pass
+      }
+      return {
+        x,
+        y,
+        color
+      }
+    })
+  }
+
   // Parse back to our coords/colors
   SgfToPos (sgfColor, sgfCoord) {
-    var color = (sgfColor === 'W' ? Stones.WHITE : Stones.BLACK)
-    var x = sgfCoord.charCodeAt(0) - 97
-    var y = sgfCoord.charCodeAt(1) - 97
-    if (sgfCoord === '' || (this.n <= 19 && sgfCoord === 'tt')) {
-      x = y = -1 // it's a pass
+    var play = true
+    if (sgfColor[0] === 'A') {
+      sgfColor = sgfColor[1]
+      play = false
     }
+    var color = (sgfColor === 'W' ? Stones.WHITE : Stones.BLACK)
     return {
-      x,
-      y,
-      color
+      play,
+      moves: this.SgfToCoord(color, sgfCoord)
     }
   }
 
@@ -392,15 +407,22 @@ class GoGame {
     }
     this.n = szN
     this.Reset()
-    var re = /;[\r\n\t ]*([BW])\[([a-z]*)\]/g
-    for (var m;
-      (m = re.exec(sgf));) {
-      var pos = this.SgfToPos(m[1], m[2])
-      if (!this.Play(pos.x, pos.y, pos.color)) {
-        console.log('Aborting load: unexpected illegal move at ' +
-          this.UserCoord(pos.x, pos.y, pos.color, 1) +
-          ' sgf: ' + m[0])
-        return true
+    var re = /[\];][\r\n\t ]*(A?[BW])((\[[a-z]*\])+)/g
+    for (var m; (m = re.exec(sgf));) {
+      console.log('match:', m)
+      var positions = this.SgfToPos(m[1], m[2].substring(1)) // skip first [
+      console.log('moves:', positions.play, positions.moves)
+      for (var i = 0; i < positions.moves.length; i++) {
+        var pos = positions.moves[i]
+        if (positions.play) {
+          if (!this.Play(pos.x, pos.y, pos.color)) {
+            console.log('Aborting load: unexpected illegal move at ' +
+              this.UserCoord(pos.x, pos.y, pos.color, 1) + ' sgf: ' + m[0])
+            return true
+          }
+        } else {
+          this.Place(pos.x, pos.y, pos.color)
+        }
       }
     }
     return true
@@ -699,9 +721,11 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.ctx.fillStyle = color1
     this.ctx.strokeStyle = color2
     this.ctx.textAlign = 'center'
-    this.ctx.lineWidth = 3
-    this.ctx.strokeText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
-    this.ctx.fillText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
+    this.ctx.lineWidth = 4
+    var xx = this.posToCoord(x)
+    var yy = this.posToCoord(y + 0.1)
+    this.ctx.strokeText(txt, xx, yy)
+    this.ctx.fillText(txt, xx, yy)
   }
 
   drawMouse (x, y, forceRed = false) {
