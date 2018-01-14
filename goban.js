@@ -445,7 +445,9 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.withMouseMove = true
     this.cursorI = -1
     this.cursorJ = -1
+    this.underCursor = Stones.EMPTY
   }
+
   // forward to Game object
   get n () {
     return this.g.n
@@ -616,8 +618,7 @@ class GoBan { // eslint-disable-line no-unused-vars
       }
       return
     }
-    var underCursor = this.At(this.cursorI, this.cursorJ)
-    if (underCursor && this.withGroupNumbers && what === underCursor) {
+    if (this.underCursor && this.withGroupNumbers && what === this.underCursor) {
       this.drawStoneNC(i, j, color, num, true)
       this.drawHighlight(this.HighlightColor(color), i, j)
     } else {
@@ -694,8 +695,8 @@ class GoBan { // eslint-disable-line no-unused-vars
       })
       c.addEventListener('mouseleave', function (event) {
         self.withLastMoveHighlight = false
-        this.cursorI = -1
-        this.cursorJ = -1
+        this.underCursor = Stones.EMPTY
+        this.updateCursor(-1, -1)
         self.Redraw()
       })
       c.addEventListener('mouseenter', function (event) {
@@ -710,11 +711,18 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.Redraw()
   }
 
+  updateCursor (x, y) {
+    var i = Math.round(x)
+    var j = Math.round(y)
+    this.cursorI = i
+    this.cursorJ = j
+    this.underCursor = this.At(i, j)
+  }
+
   mouseMove (event) {
     var x = this.coordToPos(event.offsetX)
     var y = this.coordToPos(event.offsetY)
-    this.cursorI = Math.round(x)
-    this.cursorJ = Math.round(y)
+    this.updateCursor(x, y)
     if (this.withMouseMove) {
       this.Redraw()
       this.drawMouse(x, y)
@@ -752,8 +760,7 @@ class GoBan { // eslint-disable-line no-unused-vars
   clickPosition (event) {
     var x = this.coordToPos(event.offsetX)
     var y = this.coordToPos(event.offsetY)
-    this.cursorI = Math.round(x)
-    this.cursorJ = Math.round(y)
+    this.updateCursor(x, y)
     var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fix me
     var coord = this.g.UserCoord(this.cursorI, this.cursorJ)
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
@@ -809,12 +816,13 @@ class GoBan { // eslint-disable-line no-unused-vars
     }
     this.drawInfo()
     var len = this.g.history.length - 1
-    // TODO: if history is longer than maybe 1/2 of the board, maybe faster to use the board instead of replaying from first move
+
     var underCursor
     if (this.withGroupNumbers && !this.OutOfBounds(this.cursorI, this.cursorJ)) {
-      underCursor = this.At(this.cursorI, this.cursorJ)
+      underCursor = this.underCursor
     }
 
+    // TODO: if history is longer than maybe 1/2 of the board, maybe faster to use the board instead of replaying from first move
     for (i = 0; i <= len; i++) {
       var skipHighlight = (i === len && this.withLastMoveHighlight && !underCursor) // for the last move
       var pos = this.g.history[i]
