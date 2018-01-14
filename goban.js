@@ -205,9 +205,20 @@ class GoGame {
     return (this.history[l].undo !== -1)
   }
 
-  Update (i, j, p, stone) {
-    var gid = this.nextGid[stone]
+  NextGid (stone) {
+    if (this.nextGid[Stones.WHITE] < this.nextGid[Stones.BLACK] - 1) {
+      this.nextGid[Stones.WHITE] = this.nextGid[Stones.BLACK] - 1
+    }
+    if (this.nextGid[Stones.BLACK] < this.nextGid[Stones.WHITE] - 1) {
+      this.nextGid[Stones.BLACK] = this.nextGid[Stones.WHITE] - 1
+    }
+    var res = this.nextGid[stone]
     this.nextGid[stone] += 2
+    return res
+  }
+
+  Update (i, j, p, stone) {
+    var gid = this.NextGid(stone)
     var otherColor = GoGame.OtherColor(gid)
     // Place as new group first:
     var n = this.Neighbors(p)
