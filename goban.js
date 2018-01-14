@@ -25,6 +25,7 @@ class GoGame {
     this.hascapture = false
     this.captured = [0, 0, 0]
     this.nextMove = Stones.BLACK
+    this.nextGid = [0, Stones.BLACK, Stones.WHITE]
   }
 
   // x,y coordinates to flat array coordinates
@@ -117,30 +118,19 @@ class GoGame {
     })
   }
 
-  // Place puts/erases stone irrespective of rules,
-  // and records that in the history.
-  Place (i, j, stone, move) {
-    var p = this.c2idx(i, j)
-    var prev = this.board[p]
-    this.board[p] = stone
-    this.history.push({
-      x: i,
-      y: j,
-      color: stone,
-      move: move,
-      undo: prev
-    })
-  }
-
   // Returns true if move is valid/placed, false otherwise.
   // Always succeeds for Stones.EMPTY which clears the position.
-  Play (i, j, stone, checkoob = true) {
+  Play (i, j, stone) {
+    return this.Move(i, j, stone, this.NextMove())
+  }
+
+  Move (i, j, stone, move) {
     this.hascapture = false
     if (GoGame.IsPass(i, j)) {
       this.Pass(stone)
       return true
     }
-    if (checkoob && this.OutOfBounds(i, j)) {
+    if (this.OutOfBounds(i, j)) {
       return false
     }
     var p = this.c2idx(i, j)
@@ -151,12 +141,13 @@ class GoGame {
     if (this.board[p]) {
       return false
     }
-    var move = this.NextMove()
-    if (stone !== GoGame.ThisColor(move)) {
+    /*
+    if (move && (stone !== GoGame.ThisColor(move))) {
       console.log('Wrong color for the turn ' + this.UserCoord(i, j, stone, 1) + ' ' + i + ' ' + j + ' ' + stone)
       this.nextMove--
       return false
     }
+    */
     this.history.push({
       x: i,
       y: j,
@@ -214,11 +205,9 @@ class GoGame {
     return (this.history[l].undo !== -1)
   }
 
-  Update (i, j, p, stone, gid) {
-    var sameColor = GoGame.ThisColor(gid)
-    if (sameColor !== stone) {
-      console.log(this.UserCoord(i, j, stone) + ' unexpected at this turn! ' + stone + ' ' + gid)
-    }
+  Update (i, j, p, stone) {
+    var gid = this.nextGid[stone]
+    this.nextGid[stone] += 2
     var otherColor = GoGame.OtherColor(gid)
     // Place as new group first:
     var n = this.Neighbors(p)
@@ -230,8 +219,8 @@ class GoGame {
       this.RemoveLiberty(g, p)
     }
     // Merge friendly groups
-    var merge = n.types[sameColor].size
-    for (g of n.types[sameColor]) {
+    var merge = n.types[stone].size
+    for (g of n.types[stone]) {
       gid = this.Merge(g, gid)
     }
     console.log(this.UserCoord(i, j, stone) +
@@ -302,6 +291,7 @@ class GoGame {
     var pos = this.history[l]
     this.history.length = l // truncate
     this.nextMove--
+    this.nextGid[pos.color] -= 2
     if (pos.undo === -1) {
       // there was a multi merge or capture... let's replay everything brute force
       this.ReplayHistory()
@@ -320,10 +310,9 @@ class GoGame {
     this.Reset()
     for (var i = 0; i < h.length; i++) {
       var pos = h[i]
+      this.Move(pos.x, pos.y, pos.color, pos.move)
       if (pos.move) {
-        this.Play(pos.x, pos.y, pos.color, /* checkoob */ false)
-      } else {
-        this.Place(pos.x, pos.y, pos.color, 0)
+        this.nextMove = pos.move + 1
       }
     }
   }
@@ -340,24 +329,39 @@ class GoGame {
     return ';' + ((color === Stones.WHITE) ? 'W[' : 'B[') + pos + ']\n'
   }
 
+  SgfToCoord (color, sgfCoord) {
+    var n = this.n
+    return sgfCoord.split('[').map(function (val) {
+      var x = val.charCodeAt(0) - 97
+      var y = val.charCodeAt(1) - 97
+      if (sgfCoord === ']' || (n <= 19 && sgfCoord === 'tt]')) {
+        x = y = -1 // it's a pass
+      }
+      return {
+        x,
+        y,
+        color
+      }
+    })
+  }
+
   // Parse back to our coords/colors
   SgfToPos (sgfColor, sgfCoord) {
-    var color = (sgfColor === 'W' ? Stones.WHITE : Stones.BLACK)
-    var x = sgfCoord.charCodeAt(0) - 97
-    var y = sgfCoord.charCodeAt(1) - 97
-    if (sgfCoord === '' || (this.n <= 19 && sgfCoord === 'tt')) {
-      x = y = -1 // it's a pass
+    var play = true
+    if (sgfColor[0] === 'A') {
+      sgfColor = sgfColor[1]
+      play = false
     }
+    var color = (sgfColor === 'W' ? Stones.WHITE : Stones.BLACK)
     return {
-      x,
-      y,
-      color
+      play,
+      moves: this.SgfToCoord(color, sgfCoord)
     }
   }
 
   // Returns game history in basic SGF format
   Save () {
-    var res = '(;FF[4]GM[1]SZ[' + this.n + ']AP[vios.ai jsgo:0.1]\n'
+    var res = '(;FF[4]GM[1]SZ[' + this.n + ']AP[vios.ai jsgo:' + VERSION + ']\n'
     for (var i = 0; i < this.history.length; i++) {
       var pos = this.history[i]
       res += GoGame.SgfMove(pos.color, pos.x, pos.y)
@@ -377,6 +381,8 @@ class GoGame {
       return false
     }
     // Stop at the first variant/mainline:
+    // first get rid of ) that are inside [] so we don't stop because of a smiley in a comment
+    sgf = sgf.replace(/(\[[^\]]*)\)([^\]]*\])/g, '$1$2')
     sgf = sgf.substring(0, sgf.indexOf(')'))
     var sz = /SZ\[([0-9]+)]/.exec(sgf)
     var szN = -1
@@ -392,15 +398,18 @@ class GoGame {
     }
     this.n = szN
     this.Reset()
-    var re = /;[\r\n\t ]*([BW])\[([a-z]*)\]/g
-    for (var m;
-      (m = re.exec(sgf));) {
-      var pos = this.SgfToPos(m[1], m[2])
-      if (!this.Play(pos.x, pos.y, pos.color)) {
-        console.log('Aborting load: unexpected illegal move at ' +
-          this.UserCoord(pos.x, pos.y, pos.color, 1) +
-          ' sgf: ' + m[0])
-        return true
+    var re = /[\];][\r\n\t ]*(A?[BW])((\[[a-z]*\])+)/g
+    for (var m; (m = re.exec(sgf));) {
+      // console.log('match:', m)
+      var positions = this.SgfToPos(m[1], m[2].substring(1)) // skip first [
+      // console.log('moves:', positions.play, positions.moves)
+      for (var i = 0; i < positions.moves.length; i++) {
+        var pos = positions.moves[i]
+        if (!this.Move(pos.x, pos.y, pos.color, positions.play ? this.NextMove() : 0)) {
+          console.log('Aborting load: unexpected illegal move at ' +
+              this.UserCoord(pos.x, pos.y, pos.color, 1) + ' sgf: ' + m[0])
+          return true
+        }
       }
     }
     return true
@@ -614,15 +623,15 @@ class GoBan { // eslint-disable-line no-unused-vars
       ctx.arc(x, y, this.stoneRadius * 0.7, 0.2, Math.PI / 2 - 0.2)
       ctx.stroke()
     }
+    if (this.withGroupNumbers) {
+      num = this.At(i, j)
+    }
     if (num && (this.withMoveNumbers || this.withGroupNumbers)) {
       ctx.fillStyle = highlight
       ctx.textAlign = 'center'
       // checked it fits with highlight and 399
       var fontSz = Math.round(this.sz1 * 0.35 * 10) / 10
       ctx.font = '' + fontSz + 'px Arial'
-      if (this.withGroupNumbers) {
-        num = '' + this.At(i, j)
-      }
       ctx.fillText('' + num, x, y + fontSz / 3)
     }
     ctx.beginPath()
@@ -699,9 +708,11 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.ctx.fillStyle = color1
     this.ctx.strokeStyle = color2
     this.ctx.textAlign = 'center'
-    this.ctx.lineWidth = 3
-    this.ctx.strokeText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
-    this.ctx.fillText(txt, this.posToCoord(x), this.posToCoord(y + 0.1))
+    this.ctx.lineWidth = 4
+    var xx = this.posToCoord(x)
+    var yy = this.posToCoord(y + 0.1)
+    this.ctx.strokeText(txt, xx, yy)
+    this.ctx.fillText(txt, xx, yy)
   }
 
   drawMouse (x, y, forceRed = false) {
@@ -784,7 +795,8 @@ class GoBan { // eslint-disable-line no-unused-vars
 
     for (i = 0; i <= len; i++) {
       var skipHighlight = (i === len && this.withLastMoveHighlight && !underCursor) // for the last move
-      this.drawStone(this.g.history[i].x, this.g.history[i].y, this.g.history[i].color, i + 1, skipHighlight)
+      var pos = this.g.history[i]
+      this.drawStone(pos.x, pos.y, pos.color, pos.move, skipHighlight)
     }
     if (underCursor) {
       i = 0
