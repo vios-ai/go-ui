@@ -1,5 +1,5 @@
 // Go game and goban model and canvas drawing.
-// (c)2017 All Rights Reserved by Laurent Demailly
+// (c)2017,2018 All Rights Reserved by Laurent Demailly
 
 var Stones = {
   EMPTY: 0, // evaluates to false
@@ -802,7 +802,7 @@ class GoBan { // eslint-disable-line no-unused-vars
       this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
       return
     }
-    if (forceRed || this.OutOfBounds(this.cursorI, this.cursorJ) || !this.Empty()) {
+    if (forceRed || this.OutOfBounds() || !this.Empty()) {
       this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
       this.drawHighlight(this.Color(color), x, y, 3, 5, 3)
     } else {
@@ -834,7 +834,7 @@ class GoBan { // eslint-disable-line no-unused-vars
         this.Redraw()
         this.drawMouse(x, y, true)
       }
-      if (!this.withGroupNumbers || this.Empty()) {
+      if (!this.OutOfBounds() && (!this.withGroupNumbers || this.Empty())) {
         this.drawTransientText('Invalid move ' + coord)
       }
       console.log('Invalid move ' + coord)
@@ -872,7 +872,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     var len = this.g.history.length - 1
 
     var underCursor
-    if (this.withGroupNumbers && !this.OutOfBounds(this.cursorI, this.cursorJ)) {
+    if (this.withGroupNumbers && !this.OutOfBounds()) {
       underCursor = this.underCursor
     }
 
@@ -910,7 +910,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.g.ReplayHistory()
   }
 
-  OutOfBounds (i, j) {
+  OutOfBounds (i = this.cursorI, j = this.cursorJ) {
     return this.g.OutOfBounds(i, j)
   }
   Empty (i = this.cursorI, j = this.cursorJ) {
