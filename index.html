@@ -8,14 +8,20 @@
     * {
       -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     }
+    * { margin: 0; padding: 0; }
+    table {
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0;
+    }
   </style>
 </head>
 
 <body onresize="resizeHandler()">
 
-  <table align="center">
+  <table>
     <tr>
-      <td class="ui" colspan=3 align="center">
+      <td class="ui" colspan=3 align="center" style="margin-left: auto; margin-right: auto;">
         <button type="submit" onclick="doLoad('sgf-autoSave');">Load Auto Save</button> or
         <button type="submit" onclick="doLoad(selList.value);">Load</button>:
         <select id="saveList"></select> or
