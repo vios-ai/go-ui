@@ -341,16 +341,32 @@ class GoGame {
     }
   }
 
+  static PosToSgfCoord (pos) {
+    return '[' + String.fromCharCode(97 + pos.x, 97 + pos.y) + ']'
+  }
+
+  static ColorToSgfColor (color) {
+    return (color === Stones.WHITE) ? 'W' : 'B'
+  }
+
   // SGF format black/white move
-  static SgfMove (color, x, y) {
-    var pos
-    if (GoGame.IsPass(x, y)) {
-      // pass
-      pos = '' // or "tt" as used for 19x19 pass by many
-    } else {
-      pos = String.fromCharCode(97 + x, 97 + y)
+  static SgfMove (res, prev, pos) {
+    if (pos.move === 0) {
+      if (!prev || prev.move !== 0 || prev.color !== pos.color) {
+        res += 'A' + GoGame.ColorToSgfColor(pos.color)
+      }
+      res += GoGame.PosToSgfCoord(pos)
+      return res
     }
-    return ';' + ((color === Stones.WHITE) ? 'W[' : 'B[') + pos + ']\n'
+    res += ';' + GoGame.ColorToSgfColor(pos.color)
+    if (GoGame.IsPass(pos.x, pos.y)) {
+      // pass
+      res += '[]' // or "tt" as used for 19x19 pass by many
+    } else {
+      res += GoGame.PosToSgfCoord(pos)
+    }
+    res += '\n'
+    return res
   }
 
   SgfToCoord (color, sgfCoord) {
@@ -386,9 +402,11 @@ class GoGame {
   // Returns game history in basic SGF format
   Save () {
     var res = '(;FF[4]GM[1]SZ[' + this.n + ']AP[vios.ai jsgo:' + VERSION + ']\n'
+    var prev
     for (var i = 0; i < this.history.length; i++) {
       var pos = this.history[i]
-      res += GoGame.SgfMove(pos.color, pos.x, pos.y)
+      res = GoGame.SgfMove(res, prev, pos)
+      prev = pos
     }
     res += ')\n'
     return res
