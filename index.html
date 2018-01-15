@@ -2,7 +2,7 @@
 
 <head>
   <link rel="shortcut icon" href="favicon.ico">
-  <title>GoBan - vios.ai - Go Game v0.1.4</title>
+  <title>GoBan - vios.ai - Go Game v0.1.5</title>
   <script src="goban.js"></script>
   <style>
     * {
@@ -15,7 +15,7 @@
 
   <table align="center">
     <tr>
-      <td colspan=3 align="center">
+      <td class="ui" colspan=3 align="center">
         <button type="submit" onclick="doLoad('sgf-autoSave');">Load Auto Save</button> or
         <button type="submit" onclick="doLoad(selList.value);">Load</button>:
         <select id="saveList"></select> or
@@ -29,7 +29,7 @@
       <td id="goban-container" style="width: 100%" colspan="3">
         <canvas id="goban" style="cursor: none;"></canvas>
       </td>
-      <tr>
+    <tr td class="ui">
         <td>
           Coords: <input type="checkbox" onchange="goban.withCoordinates=this.checked;goban.Redraw();" checked />,
           Move#: <input type="checkbox" onchange="goban.withMoveNumbers=this.checked;goban.Redraw();" />,
@@ -71,7 +71,11 @@
         min = window.innerHeight
       }
       console.log("Min Height/Width is " + min)
-      var scale = 2 * Math.floor(min * .90 / (size + 2) / 2)
+      var scaling = 0.90
+      if (!goban.ui) {
+        scaling = 1
+      }
+      var scale = 2 * Math.floor(min * scaling / (size + 2) / 2)
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
       //goban.drawStone(1,1, "orange", 399)

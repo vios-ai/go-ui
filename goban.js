@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.4'
+var VERSION = '0.1.5'
 
 // Logic
 class GoGame {
@@ -486,6 +486,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.cursorJ = -1
     this.underCursor = Stones.EMPTY
     this.mode = 'P' // Normal play
+    this.ui = true
   }
 
   SetMode (mode) {
@@ -775,12 +776,14 @@ class GoBan { // eslint-disable-line no-unused-vars
   drawText (x, y, color1, color2, txt) {
     this.ctx.font = '' + this.sz1 * 0.3 + 'px Arial'
     this.ctx.fillStyle = color1
-    this.ctx.strokeStyle = color2
     this.ctx.textAlign = 'center'
-    this.ctx.lineWidth = 4
     var xx = this.posToCoord(x)
     var yy = this.posToCoord(y + 0.1)
-    this.ctx.strokeText(txt, xx, yy)
+    if (color2) {
+      this.ctx.lineWidth = 4
+      this.ctx.strokeStyle = color2
+      this.ctx.strokeText(txt, xx, yy)
+    }
     this.ctx.fillText(txt, xx, yy)
   }
 
@@ -795,12 +798,34 @@ class GoBan { // eslint-disable-line no-unused-vars
     }
   }
 
+  IsCorner () {
+    if (GoGame.IsPass(this.cursorI, this.cursorJ)) {
+      return 'TL'
+    }
+    if ((this.cursorI === -1) && (this.cursorJ === this.n)) {
+      return 'BL'
+    }
+    if ((this.cursorI === this.n) && (this.cursorJ === -1)) {
+      return 'TR'
+    }
+    if ((this.cursorI === this.n) && (this.cursorJ === this.n)) {
+      return 'BR'
+    }
+    return null
+  }
+
   drawMouse (x, y, forceRed = false) {
     var color = this.NextColor()
     var highlight = GoGame.OtherColor(color)
-    if (GoGame.IsPass(this.cursorI, this.cursorJ)) {
-      this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
-      return
+    switch (this.IsCorner()) {
+      case 'TL':
+        return this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
+      case 'BL':
+        return this.drawText(x, y, 'purple', null, 'Toggle UI')
+      case 'TR':
+        return this.drawText(x, y, 'purple', null, 'Score')
+      case 'BR':
+        return this.drawText(x, y, 'purple', null, 'Info')
     }
     if (forceRed || this.OutOfBounds() || !this.Empty()) {
       this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
@@ -810,10 +835,50 @@ class GoBan { // eslint-disable-line no-unused-vars
     }
   }
 
+  Score () {
+    console.log('Score... to be implemented...')
+  }
+
+  Info () {
+    window.open('http://vios.ai/', '_blank')
+  }
+
+  ToggleUI () {
+    var elements = document.getElementsByClassName('ui')
+    var vis
+    if (this.ui) {
+      this.ui = false
+      this.withCoordinates = false
+      this.savedMoveNumbersSetting = this.withMoveNumbers
+      this.withMoveNumbers = false
+      this.savedGroupNumbersSetting = this.withGroupNumbers
+      this.withGroupNumbers = false
+      vis = 'none'
+    } else {
+      this.ui = true
+      this.withCoordinates = true
+      this.withMoveNumbers = this.savedMoveNumbersSetting
+      this.withGroupNumbers = this.savedGroupNumbersSetting
+      vis = 'inline'
+    }
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].style.display = vis
+    }
+    resizeHandler() // eslint-disable-line no-undef
+  }
+
   clickPosition (event) {
     var x = this.coordToPos(event.offsetX)
     var y = this.coordToPos(event.offsetY)
     this.updateCursor(x, y)
+    switch (this.IsCorner()) {
+      case 'BL':
+        return this.ToggleUI()
+      case 'BR':
+        return this.Info()
+      case 'TR':
+        return this.Score()
+    }
     var color = this.NextColor()
     var coord = this.g.UserCoord(this.cursorI, this.cursorJ)
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
