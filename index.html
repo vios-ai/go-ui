@@ -2,7 +2,7 @@
 
 <head>
   <link rel="shortcut icon" href="favicon.ico">
-  <title>GoBan - vios.ai - Go Game v0.1.5</title>
+  <title>GoBan - vios.ai - Go Game v0.1.6</title>
   <script src="goban.js"></script>
   <style>
     * {
@@ -72,16 +72,23 @@
     function resizeHandler() {
       var size = goban.n
       console.log("Size is " + size)
-      var min = window.innerWidth
-      if (window.innerHeight < min) {
-        min = window.innerHeight
-      }
-      console.log("Min Height/Width is " + min)
+      var min = window.innerHeight
       var scaling = 0.90
-      if (!goban.ui) {
+      if (min * scaling > window.innerWidth) {
+        min = window.innerWidth
         scaling = 1
       }
-      var scale = 2 * Math.floor(min * scaling / (size + 2) / 2)
+      if (window.innerHeight <= scale * min) {
+        min = window.innerHeight
+        scale = 0.9 // 90% so there is room for UI at top/bottom
+      }
+      console.log("Min Height/Width is " + min)
+      var sz = size + 2 // +1 for goban border +1 for coords
+      if (!goban.ui) {
+        scaling = 1 // 100%
+        sz -= 1 // no extra space for coords
+      }
+      var scale = 2 * Math.floor(min * scaling / sz / 2) // so scale is always even
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
       //goban.drawStone(1,1, "orange", 399)

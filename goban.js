@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.5'
+var VERSION = '0.1.6'
 
 // Logic
 class GoGame {
@@ -730,8 +730,6 @@ class GoBan { // eslint-disable-line no-unused-vars
   Draw (c, scale = 24) {
     this.sz1 = scale
     this.stoneRadius = scale / 2 - 0.5
-    this.gobanSz = (this.n + 1) * scale
-    this.delta = scale * 1.5
     if (!this.canvas) {
       // First time, setup listener
       var self = this
@@ -821,7 +819,7 @@ class GoBan { // eslint-disable-line no-unused-vars
       case 'TL':
         return this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
       case 'BL':
-        return this.drawText(x, y, 'purple', null, 'Toggle UI')
+        return this.drawText(x, y, 'purple', null, this.ui ? 'UI off' : 'UI on')
       case 'TR':
         return this.drawText(x, y, 'purple', null, 'Score')
       case 'BR':
@@ -910,14 +908,22 @@ class GoBan { // eslint-disable-line no-unused-vars
     if (DEBUG) {
       console.log('Redraw called')
     }
+    var offset = this.sz1
+    this.gobanSz = (this.n + 1) * this.sz1
+    if (this.ui) {
+      this.delta = this.sz1 * 1.5
+    } else {
+      this.delta = this.sz1
+      offset = 0
+    }
     var c = this.canvas
     var ctx = c.getContext('2d')
     ctx.clearRect(0, 0, c.width, c.height)
-    c.height = this.gobanSz + this.sz1
-    c.width = this.gobanSz + this.sz1
+    c.height = this.gobanSz + offset
+    c.width = this.gobanSz + offset
     this.ctx = ctx
     ctx.fillStyle = 'moccasin'
-    ctx.fillRect(this.sz1 / 2, this.sz1 / 2, this.gobanSz, this.gobanSz)
+    ctx.fillRect(offset / 2, offset / 2, this.gobanSz, this.gobanSz)
     ctx.fillStyle = 'black'
     var zero = this.posToCoord(0)
     var last = this.posToCoord(this.n - 1)
