@@ -458,6 +458,11 @@ class GoGame {
         }
       }
     }
+    // If the SGF says it's white turn and it's not
+    var pl = /PL\[W\]/.exec(sgf)
+    if (pl && this.NextTurn !== Stones.WHITE) {
+      this.Pass(Stones.BLACK)
+    }
     return true
   }
 }
