@@ -314,7 +314,9 @@ class GoGame {
     l--
     var pos = this.history[l]
     this.history.length = l // truncate
-    this.nextMove--
+    if (pos.move) {
+      this.nextMove--
+    }
     this.nextGid[pos.color] -= 2
     if (pos.undo === -1) {
       // there was a multi merge or capture... let's replay everything brute force
