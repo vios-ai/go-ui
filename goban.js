@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.1.3'
+var VERSION = '0.1.4'
 
 // Logic
 class GoGame {
@@ -119,6 +119,16 @@ class GoGame {
       move: this.NextMove(),
       prev: null
     })
+  }
+
+  // whose turn is it ?
+  NextTurn () {
+    var l = this.history.length
+    if (l === 0) {
+      return Stones.BLACK
+    }
+    var lastColor = this.history[l - 1].color
+    return GoGame.OtherColor(lastColor)
   }
 
   // Returns true if move is valid/placed, false otherwise.
@@ -446,6 +456,11 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.cursorI = -1
     this.cursorJ = -1
     this.underCursor = Stones.EMPTY
+    this.mode = 'P' // Normal play
+  }
+
+  SetMode (mode) {
+    this.mode = mode
   }
 
   // forward to Game object
@@ -566,7 +581,7 @@ class GoBan { // eslint-disable-line no-unused-vars
   }
 
   RecordMove (x, y, color) {
-    if (!this.g.Play(x, y, this.BlackOrWhite(color))) {
+    if (!this.g.Move(x, y, this.BlackOrWhite(color), (this.mode === 'P' ? this.g.NextMove() : 0))) {
       return false
     }
     this.RemoveHighlight()
@@ -740,9 +755,19 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.ctx.fillText(txt, xx, yy)
   }
 
+  NextColor () {
+    switch (this.mode) {
+      case 'B':
+        return Stones.BLACK
+      case 'W':
+        return Stones.WHITE
+      default: // normal P play mode
+        return this.g.NextTurn()
+    }
+  }
+
   drawMouse (x, y, forceRed = false) {
-    var n = this.g.history.length
-    var color = (n % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fixme
+    var color = this.NextColor()
     var highlight = GoGame.OtherColor(color)
     if (GoGame.IsPass(this.cursorI, this.cursorJ)) {
       this.drawText(x, y, this.Color(color), this.Color(highlight), 'pass')
@@ -760,7 +785,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     var x = this.coordToPos(event.offsetX)
     var y = this.coordToPos(event.offsetY)
     this.updateCursor(x, y)
-    var color = (this.g.history.length % 2 === 0) ? Stones.BLACK : Stones.WHITE // TODO: fix me
+    var color = this.NextColor()
     var coord = this.g.UserCoord(this.cursorI, this.cursorJ)
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
       this.underCursor = this.At(this.cursorI, this.cursorJ)
