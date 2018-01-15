@@ -353,6 +353,9 @@ class GoGame {
   static SgfMove (res, prev, pos) {
     if (pos.move === 0) {
       if (!prev || prev.move !== 0 || prev.color !== pos.color) {
+        if (prev) {
+          res += ';'
+        }
         res += 'A' + GoGame.ColorToSgfColor(pos.color)
       }
       res += GoGame.PosToSgfCoord(pos)
@@ -440,7 +443,8 @@ class GoGame {
     }
     this.n = szN
     this.Reset()
-    var re = /[\];][\r\n\t ]*(A?[BW])((\[[a-z]*\])+)/g
+    // console.log('sgf', sgf)
+    var re = /[\];\r\n\t ]*(A?[BW])((\[[a-z]*\])+)/g
     for (var m; (m = re.exec(sgf));) {
       // console.log('match:', m)
       var positions = this.SgfToPos(m[1], m[2].substring(1)) // skip first [
