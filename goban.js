@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.2.1'
+var VERSION = '0.2.2'
 
 // Logic
 class GoGame {
@@ -811,7 +811,19 @@ class GoBan { // eslint-disable-line no-unused-vars
     return null
   }
 
-  drawMouse (x, y, forceRed = false) {
+  OnLastMove () {
+    if (this.OutOfBounds()) {
+      return false
+    }
+    var l = this.g.history.length
+    if (l === 0) {
+      return false
+    }
+    var pos = this.g.history[l - 1]
+    return (pos.x === this.cursorI) && (pos.y === this.cursorJ)
+  }
+
+  drawMouse (x, y, forceHighlight = false) {
     var color = this.NextColor()
     var highlight = GoGame.OtherColor(color)
     switch (this.IsCorner()) {
@@ -824,7 +836,10 @@ class GoBan { // eslint-disable-line no-unused-vars
       case 'BR':
         return this.drawText(x, y, 'purple', null, 'Info')
     }
-    if (forceRed || this.OutOfBounds() || !this.Empty()) {
+    if (this.OnLastMove()) {
+      return this.drawText(x, y, this.Color(highlight), this.Color(color), 'Undo')
+    }
+    if (forceHighlight || this.OutOfBounds() || !this.Empty()) {
       this.drawHighlight(this.Color(highlight), x, y, 5, 6, 5)
       this.drawHighlight(this.Color(color), x, y, 3, 5, 3)
     } else {
@@ -868,6 +883,13 @@ class GoBan { // eslint-disable-line no-unused-vars
     var x = this.coordToPos(event.offsetX)
     var y = this.coordToPos(event.offsetY)
     this.updateCursor(x, y)
+    if (this.OnLastMove()) {
+      this.g.Undo()
+      this.updateCursor(x, y)
+      this.Redraw()
+      this.drawMouse(x, y)
+      return
+    }
     switch (this.IsCorner()) {
       case 'BL':
         return this.ToggleUI()
