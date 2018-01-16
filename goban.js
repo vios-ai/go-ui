@@ -10,7 +10,8 @@ var Stones = {
 var DEBUG = false
 var VERSION = '0.2.2'
 
-// Logic
+// Class encapsulating the logic for a Go Game (valid games, capture, history
+// sgf import/export, etc...)
 class GoGame {
   constructor (size) {
     this.n = size
