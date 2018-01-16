@@ -877,7 +877,9 @@ class GoBan { // eslint-disable-line no-unused-vars
     for (var i = 0; i < elements.length; i++) {
       elements[i].style.display = vis
     }
-    resizeHandler() // eslint-disable-line no-undef
+    if (!resizeHandler()) { // eslint-disable-line no-undef
+      this.Redraw()
+    }
   }
 
   clickPosition (event) {

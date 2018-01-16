@@ -93,6 +93,7 @@
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
       //goban.drawStone(1,1, "orange", 399)
+      return true // (redraw) already done. goban.html doesn't return true
     }
 
     resizeHandler()
