@@ -911,7 +911,12 @@ class GoBan { // eslint-disable-line no-unused-vars
       }
       console.log('Valid move #' + this.g.history.length + ' at ' + coord + ' for ' + color)
       if (this.withSounds) {
-        audio.play()
+        // Only load sound if needed/used
+        if (!this.audio) {
+          // Stone sound (c)2017 All Rights Reserved by Laurent Demailly
+          this.audio = new window.Audio('gostone.m4a')
+        }
+        this.audio.play()
       }
       if (this.withAutoSave) {
         window.localStorage.setItem('sgf-autoSave', this.g.Save())
@@ -1025,6 +1030,3 @@ class GoBan { // eslint-disable-line no-unused-vars
     return this.g.Save()
   }
 }
-
-// Stone sound (c)2017 All Rights Reserved by Laurent Demailly
-var audio = new window.Audio('gostone.m4a')
