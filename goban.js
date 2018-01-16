@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.2.2'
+var VERSION = '0.2.3'
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -938,7 +938,7 @@ class GoBan { // eslint-disable-line no-unused-vars
       this.delta = this.sz1
       offset = 0
     }
-    if (!(this.sz1 % 2)) {
+    if ((this.delta - 0.5) !== Math.floor(this.delta)) {
       // need 0.5 to look sharp/black instead of grey
       this.delta += 0.5
     }
