@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.2.3'
+var VERSION = '0.2.4'
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -912,11 +912,11 @@ class GoBan { // eslint-disable-line no-unused-vars
       console.log('Valid move #' + this.g.history.length + ' at ' + coord + ' for ' + color)
       if (this.withSounds) {
         // Only load sound if needed/used
-        if (!this.audio) {
+        if (!audio) {
           // Stone sound (c)2017 All Rights Reserved by Laurent Demailly
-          this.audio = new window.Audio('gostone.m4a')
+          audio = new window.Audio('gostone.m4a')
         }
-        this.audio.play()
+        window.setTimeout(playSound)
       }
       if (this.withAutoSave) {
         window.localStorage.setItem('sgf-autoSave', this.g.Save())
@@ -1029,4 +1029,10 @@ class GoBan { // eslint-disable-line no-unused-vars
   Save () {
     return this.g.Save()
   }
+}
+
+var audio
+
+function playSound () {
+  audio.play()
 }
