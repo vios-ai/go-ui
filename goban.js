@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.2.4'
+var VERSION = '0.2.5'
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -108,7 +108,7 @@ class GoGame {
     return (i === -1) && (j === -1)
   }
 
-  Pass (stone) {
+  Pass (move, stone) {
     if (stone === Stones.EMPTY) {
       // this is just erasing a pass
       return
@@ -117,7 +117,7 @@ class GoGame {
       x: -1,
       y: -1,
       color: stone,
-      move: this.NextMove(),
+      move: move,
       prev: null
     })
   }
@@ -141,7 +141,7 @@ class GoGame {
   Move (i, j, stone, move) {
     this.hascapture = false
     if (GoGame.IsPass(i, j)) {
-      this.Pass(stone)
+      this.Pass(move, stone)
       return true
     }
     if (this.OutOfBounds(i, j)) {
@@ -392,11 +392,20 @@ class GoGame {
   }
 
   // Parse back to our coords/colors
-  SgfToPos (sgfColor, sgfCoord) {
+  SgfToPos (allmatch, sgfColor, sgfCoord) {
     var play = true
     if (sgfColor[0] === 'A') {
       sgfColor = sgfColor[1]
       play = false
+    } else {
+      // deal with case where the B/W is not a move but the player name:
+      // (ie in the header, without a semi colon)
+      if (!allmatch.includes(';')) {
+        return {
+          play,
+          moves: []
+        }
+      }
     }
     var color = (sgfColor === 'W' ? Stones.WHITE : Stones.BLACK)
     return {
@@ -450,7 +459,7 @@ class GoGame {
     var re = /[\];\r\n\t ]*(A?[BW])((\[[a-z]*\])+)/g
     for (var m; (m = re.exec(sgf));) {
       // console.log('match:', m)
-      var positions = this.SgfToPos(m[1], m[2].substring(1)) // skip first [
+      var positions = this.SgfToPos(m[0], m[1], m[2].substring(1)) // skip first [
       // console.log('moves:', positions.play, positions.moves)
       for (var i = 0; i < positions.moves.length; i++) {
         var pos = positions.moves[i]
@@ -464,7 +473,7 @@ class GoGame {
     // If the SGF says it's white turn and it's not
     var pl = /PL\[W\]/.exec(sgf)
     if (pl && this.NextTurn !== Stones.WHITE) {
-      this.Pass(Stones.BLACK)
+      this.Pass(0, Stones.BLACK)
     }
     return true
   }
