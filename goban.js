@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.2.5'
+var VERSION = '0.3.0'
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -81,6 +81,34 @@ class GoGame {
       return new Set()
     }
     return this.liberties[p]
+  }
+
+  Score () {
+    var score = [new Set(), new Set(), new Set()]
+    for (var i = 0; i < this.groups.length; i++) {
+      var g = this.groups[i]
+      if (!g) {
+        continue
+      }
+      var color = GoGame.ThisColor(i)
+      var otherColor = GoGame.OtherColor(color)
+      for (var j = 0; j < g.length; j++) {
+        score[color].add(g[j])
+      }
+      for (var l of this.liberties[i]) {
+        if (score[color].has(l) || score[Stones.EMPTY].has(l)) {
+          // already classified spot
+          continue
+        }
+        var n = this.Neighbors(l)
+        if (n.types[otherColor].size) {
+          score[Stones.EMPTY].add(l)
+        } else {
+          score[color].add(l)
+        }
+      }
+    }
+    return score
   }
 
   static PosToLetter (i) {
@@ -250,7 +278,7 @@ class GoGame {
     }
     console.log(this.UserCoordLong(i, j, stone) +
       ' merge# ' + merge + ' -> gid ' + gid + ' liberties=' + this.liberties[gid].size)
-    if (merge > 1) {
+    if (merge >= 1) {
       // Mark this move as creating a merge (need refresh and special undo)
       this.history[this.history.length - 1].undo = -1
     }
@@ -323,9 +351,13 @@ class GoGame {
       // there was a multi merge or capture... let's replay everything brute force
       this.ReplayHistory()
     } else {
-      // no multi merge so we just need to erase that stone or put back a stone
+      // no merge so we just need to erase that stone or put back a stone
+      // and delete the group/liberty
+      // TODO restore single merge optimization while making score work after undo
       if (!GoGame.IsPass(pos.x, pos.y)) {
         this.board[this.c2idx(pos.x, pos.y)] = pos.undo
+        delete this.groups[pos.move]
+        delete this.liberties[pos.move]
       }
     }
     return true
@@ -726,6 +758,17 @@ class GoBan { // eslint-disable-line no-unused-vars
     ctx.stroke()
   }
 
+  drawScore (p, color) {
+    var [i, j] = this.g.idx2c(p)
+    var x = this.posToCoord(i)
+    var y = this.posToCoord(j)
+    var ctx = this.ctx
+    ctx.fillStyle = color
+    ctx.beginPath()
+    var delta = this.stoneRadius / 3
+    ctx.fillRect(x - delta, y - delta, 2 * delta, 2 * delta)
+  }
+
   // internal utility for coord -> pixels translation
   posToCoord (x) {
     return this.delta + x * this.sz1
@@ -747,11 +790,13 @@ class GoBan { // eslint-disable-line no-unused-vars
       })
       c.addEventListener('mouseleave', function (event) {
         self.withLastMoveHighlight = false
+        self.scoreShown = false
         self.updateCursor(-1, -1)
         self.Redraw()
       })
       c.addEventListener('mouseenter', function (event) {
         self.withLastMoveHighlight = true
+        self.scoreShown = false
         self.Redraw()
       })
       c.addEventListener('mousemove', function (event) {
@@ -775,8 +820,12 @@ class GoBan { // eslint-disable-line no-unused-vars
     var y = this.coordToPos(event.offsetY)
     this.updateCursor(x, y)
     if (this.withMouseMove) {
-      this.Redraw()
-      this.drawMouse(x, y)
+      if (this.scoreShown) {
+        this.Score(false)
+      } else {
+        this.Redraw()
+      }
+      this.drawMouse(x, y, this.scoreShown)
     }
   }
 
@@ -857,8 +906,34 @@ class GoBan { // eslint-disable-line no-unused-vars
     }
   }
 
-  Score () {
-    console.log('Score... to be implemented...')
+  Score (clicked = false) {
+    if (clicked && this.scoreShown) {
+      this.scoreShown = false
+      return this.Redraw()
+    }
+    this.scoreShown = true
+    var savedSettingG = this.withGroupNumbers
+    var savedSettingN = this.withMoveNumbers
+    this.withGroupNumbers = false
+    this.withMoveNumbers = false
+    this.withLastMoveHighlight = false
+    this.Redraw()
+    var s = this.g.Score()
+    this.drawTransientText('Territory: B ' + s[Stones.BLACK].size + ', W ' + s[Stones.WHITE].size + ' (neutral ' + s[Stones.EMPTY].size + ')')
+    for (var c = Stones.EMPTY; c <= Stones.WHITE; c++) {
+      var color
+      if (c) {
+        color = this.Color(c, 0.8)
+      } else {
+        color = 'rgba(20,20, 255, 0.5)'
+      }
+      for (var p of s[c]) {
+        this.drawScore(p, color)
+      }
+    }
+    this.withGroupNumbers = savedSettingG
+    this.withMoveNumbers = savedSettingN
+    this.withLastMoveHighlight = true
   }
 
   Info () {
@@ -897,6 +972,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.updateCursor(x, y)
     if (this.OnLastMove()) {
       this.g.Undo()
+      this.scoreShown = false
       this.updateCursor(x, y)
       this.Redraw()
       this.drawMouse(x, y)
@@ -908,8 +984,9 @@ class GoBan { // eslint-disable-line no-unused-vars
       case 'BR':
         return this.Info()
       case 'TR':
-        return this.Score()
+        return this.Score(true)
     }
+    this.scoreShown = false
     var color = this.NextColor()
     var coord = this.g.UserCoord(this.cursorI, this.cursorJ)
     if (this.RecordMove(this.cursorI, this.cursorJ, color)) {
@@ -945,6 +1022,7 @@ class GoBan { // eslint-disable-line no-unused-vars
   Redraw () {
     if (DEBUG) {
       console.log('Redraw called')
+      console.trace()
     }
     var offset = this.sz1
     this.gobanSz = (this.n + 1) * this.sz1
