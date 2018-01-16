@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.3.0'
+var VERSION = '0.3.1'
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -83,29 +83,56 @@ class GoGame {
     return this.liberties[p]
   }
 
+  // TODO this doesn't do neutral quite right
   Score () {
     var score = [new Set(), new Set(), new Set()]
-    for (var i = 0; i < this.groups.length; i++) {
-      var g = this.groups[i]
-      if (!g) {
-        continue
-      }
-      var color = GoGame.ThisColor(i)
-      var otherColor = GoGame.OtherColor(color)
-      for (var j = 0; j < g.length; j++) {
-        score[color].add(g[j])
-      }
-      for (var l of this.liberties[i]) {
-        if (score[color].has(l) || score[Stones.EMPTY].has(l)) {
-          // already classified spot
+    var toVisit = []
+    var seen = new Set()
+    // First pass... from the existing groups starting with the next color
+    var nextTurn = this.NextTurn()
+    console.log('nextTurn', nextTurn)
+    for (var t = 0; t < 2; t++) {
+      var offset = (t + nextTurn) % 2 // do all next turn player groups first
+      console.log('offset', t, offset)
+      for (var idx = offset; idx < this.groups.length; idx += 2) {
+        var g = this.groups[idx]
+        if (!g) {
           continue
         }
-        var n = this.Neighbors(l)
-        if (n.types[otherColor].size) {
-          score[Stones.EMPTY].add(l)
-        } else {
-          score[color].add(l)
+        console.log('processing score for gid', idx)
+        var color = GoGame.ThisColor(idx)
+        var otherColor = GoGame.OtherColor(color)
+        for (var j = 0; j < g.length; j++) {
+          score[color].add(g[j])
         }
+        for (var l of this.liberties[idx]) {
+          if (seen.has(l)) {
+            // already classified spot
+            continue
+          }
+          seen.add(l)
+          var n = this.Neighbors(l)
+          if (n.types[otherColor].size) {
+            score[Stones.EMPTY].add(l)
+            toVisit.push({p: l, c: Stones.EMPTY})
+          } else {
+            score[color].add(l)
+            toVisit.push({p: l, c: color})
+          }
+        }
+      }
+    }
+    // Then 'recursively' from each seen
+    while (toVisit.length > 0) {
+      var cur = toVisit.shift()
+      n = this.Neighbors(cur.p)
+      for (l of n.types[Stones.EMPTY]) {
+        if (seen.has(l)) {
+          continue
+        }
+        seen.add(l)
+        score[cur.c].add(l)
+        toVisit.push({p: l, c: cur.c})
       }
     }
     return score
