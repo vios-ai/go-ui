@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.2.0'
+var VERSION = '0.2.1'
 
 // Logic
 class GoGame {
@@ -718,12 +718,11 @@ class GoBan { // eslint-disable-line no-unused-vars
 
   // internal utility for coord -> pixels translation
   posToCoord (x) {
-    // need 0.5 to look sharp/black instead of grey
-    return 0.5 + this.delta + x * this.sz1
+    return this.delta + x * this.sz1
   }
   // inverse of above
   coordToPos (x) {
-    return (x - 0.5 - this.delta) / this.sz1
+    return (x - this.delta) / this.sz1
   }
 
   // Draw the main board on the given canvas
@@ -915,6 +914,10 @@ class GoBan { // eslint-disable-line no-unused-vars
     } else {
       this.delta = this.sz1
       offset = 0
+    }
+    if (!(this.sz1 % 2)) {
+      // need 0.5 to look sharp/black instead of grey
+      this.delta += 0.5
     }
     var c = this.canvas
     var ctx = c.getContext('2d')

@@ -2,7 +2,7 @@
 
 <head>
   <link rel="shortcut icon" href="favicon.ico">
-  <title>GoBan - vios.ai - Go Game v0.2.0</title>
+  <title>GoBan - vios.ai - Go Game v0.2.1</title>
   <script src="goban.js"></script>
   <style>
     * {
@@ -88,7 +88,8 @@
         scaling = 1 // 100%
         sz -= 1 // no extra space for coords
       }
-      var scale = 2 * Math.floor(min * scaling / sz / 2) // so scale is always even
+      //var scale = 2 * Math.floor(min * scaling / sz / 2) // so scale is always even
+      var scale = Math.floor(min * scaling / sz)
       console.log("New scale is " + scale)
       goban.Draw(document.getElementById("goban"), scale);
       //goban.drawStone(1,1, "orange", 399)
