@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.3.4' // Don't we love caching issues...
+var VERSION = '0.3.5' // Don't we love caching issues...
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -651,7 +651,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     this.drawHighlight(highlight, lastMove.x, lastMove.y)
   }
 
-  drawHighlight (color, i, j, width = 1, rs = this.stoneRadius * 0.6, len = rs / 3) {
+  drawHighlight (color, i, j, width = 2, rs = this.stoneRadius * 0.6, len = rs / 3) {
     var ctx = this.ctx
     ctx.beginPath()
     ctx.strokeStyle = color
@@ -745,7 +745,7 @@ class GoBan { // eslint-disable-line no-unused-vars
     var x = this.posToCoord(i)
     var y = this.posToCoord(j)
     var ctx = this.ctx
-    ctx.lineWidth = 1
+    ctx.lineWidth = 0.5
     ctx.beginPath()
     ctx.fillStyle = this.Color(color)
     ctx.arc(x, y, this.stoneRadius, 0, 2 * Math.PI)
