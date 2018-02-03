@@ -2,18 +2,18 @@
 
 <head>
   <link rel="shortcut icon" href="favicon.ico">
-  <title>GoBan - vios.ai - Go Game v0.3.2</title>
+  <title>GoBan - vios.ai - Go Game v0.3.3</title>
   <script src="goban.js"></script>
   <style>
     * {
       margin: 0; padding: 0;
+      border-spacing: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     }
     table {
       margin-left: auto;
       margin-right: auto;
-      padding: 0;
     }
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,9 +90,8 @@
         scaling = 1 // 100%
         sz -= 1 // no extra space for coords
       }
-      //var scale = 2 * Math.floor(min * scaling / sz / 2) // so scale is always even
-      var scale = Math.floor(min * scaling / sz)
-      console.log("New scale is " + scale)
+      var scale = Math.floor(min * scaling / sz + 0.0001)
+      console.log("New scale is " + scale + " device px ratio " + window.devicePixelRatio)
       goban.Draw(document.getElementById("goban"), scale);
       //goban.drawStone(1,1, "orange", 399)
       return true // (redraw) already done. goban.html doesn't return true

@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.3.2'
+var VERSION = '0.3.3'
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
@@ -1059,15 +1059,28 @@ class GoBan { // eslint-disable-line no-unused-vars
       this.delta = this.sz1
       offset = 0
     }
-    if ((this.delta - 0.5) !== Math.floor(this.delta)) {
-      // need 0.5 to look sharp/black instead of grey
-      this.delta += 0.5
-    }
     var c = this.canvas
     var ctx = c.getContext('2d')
     ctx.clearRect(0, 0, c.width, c.height)
-    c.height = this.gobanSz + offset
-    c.width = this.gobanSz + offset
+    // Deal with pixel density (retina etc)
+    var scale = window.devicePixelRatio
+    var initialSz = this.gobanSz + offset
+    c.style.width = initialSz + 'px'
+    c.style.height = initialSz + 'px'
+    c.width = initialSz * scale
+    c.height = initialSz * scale
+    ctx.scale(scale, scale)
+    if (DEBUG) {
+      console.log('Scale is ', scale, ' sz ', initialSz, ' canvas ', this.canvas)
+    }
+    // TODO: figure out new sharpness magic offset with devicePixelRatio
+    // this.delta += 1 / scale / 2
+    /*
+    if ((scale * this.delta - 0.5) !== Math.floor(scale * this.delta)) {
+      // need 0.5 to look sharp/black instead of grey
+      this.delta += 0.5 / scale
+    }
+    */
     this.ctx = ctx
     ctx.fillStyle = 'moccasin'
     ctx.fillRect(offset / 2, offset / 2, this.gobanSz, this.gobanSz)
