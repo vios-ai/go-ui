@@ -8,7 +8,7 @@ var Stones = {
 }
 
 var DEBUG = false
-var VERSION = '0.3.3'
+var VERSION = '0.3.3' // Don't we love caching issues...
 
 // Class encapsulating the logic for a Go Game (valid games, capture, history
 // sgf import/export, etc...)
